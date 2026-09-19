@@ -1,0 +1,44 @@
+@use "sass:map";
+@use "variables" as *;
+@use "base" as *;
+
+@mixin popover-surface {
+    background: map.get($colors, bar-surface);
+    color: map.get($colors, bar-text);
+    border: 1px solid map.get($colors, bar-edge);
+    border-radius: map.get($radii, popover);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32);
+    padding: map.get($controls, popover-padding);
+    font-family: $font-family;
+}
+
+@mixin topbar-popover {
+    > contents {
+        @include popover-surface;
+    }
+
+    .topbar-scaled-surface {
+        @include popover-surface;
+        box-shadow: none;
+    }
+
+    button.flat {
+        @include flat-button;
+
+        &:hover {
+            background: map.get($colors, bar-hover);
+        }
+    }
+}
+
+popover.topbar-menu.topbar-scaled-popover,
+popover.topbar-mixer.topbar-scaled-popover {
+    min-width: 0;
+    min-height: 0;
+
+    > contents {
+        background: transparent;
+        border: 0;
+        padding: 0;
+    }
+}

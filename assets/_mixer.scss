@@ -1,0 +1,13 @@
+@use "sass:map";
+@use "variables" as *;
+@use "popover" as *;
+@use "slider" as *;
+
+popover.topbar-mixer {
+    @include topbar-popover;
+    @include range-slider;
+
+    button.topbar-mute-button.muted {
+        color: map.get($colors, status-danger);
+    }
+}

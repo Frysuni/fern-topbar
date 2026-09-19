@@ -1,0 +1,22 @@
+@use "sass:map";
+@use "variables" as *;
+@use "popover" as *;
+
+.topbar-menu {
+    &-subtitle {
+        color: map.get($colors, label-secondary);
+        font-size: map.get($font-sizes, menu-meta);
+        font-weight: map.get($font-weights, regular);
+        margin-top: map.get($spacing, 1);
+    }
+
+    &-title {
+        color: map.get($colors, label-primary);
+        font-size: map.get($font-sizes, menu-title);
+        font-weight: map.get($font-weights, bold);
+    }
+}
+
+popover.topbar-menu {
+    @include topbar-popover;
+}

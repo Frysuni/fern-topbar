@@ -1,0 +1,16 @@
+{
+  "scale": 1,
+  "monitor": null,
+  "features": {
+    "start": [],
+    "center": [],
+    "end": []
+  },
+  "reveal": {
+    "on_niri_overview": true,
+    "on_hover": {
+      "enabled": true,
+      "on_fullscreen": true
+    }
+  }
+}

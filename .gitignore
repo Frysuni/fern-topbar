@@ -1,0 +1,13 @@
+# Rust build output
+/target/
+
+# Nix build and development artifacts
+/result
+/result-*
+/.direnv/
+
+# Local tool state
+/.serena/
+/.idea/
+/.codex/
+/.codebase-memory/

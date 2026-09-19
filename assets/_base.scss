@@ -1,0 +1,171 @@
+@use "sass:map";
+@use "variables" as *;
+
+@mixin feature-button {
+    min-width: map.get($controls, compact-height);
+    min-height: map.get($controls, compact-height);
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: map.get($radii, control);
+    background: transparent;
+    box-shadow: none;
+    color: map.get($colors, bar-text);
+    -gtk-icon-size: map.get($controls, icon-size);
+    transition: background-color map.get($motion, quick) ease, border-color map.get($motion, quick) ease;
+}
+
+@mixin feature-button-hover {
+    background: map.get($colors, bar-hover);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+@mixin feature-button-pressed {
+    background: map.get($colors, bar-pressed);
+    border-color: rgba(255, 255, 255, 0.11);
+}
+
+@mixin flat-button {
+    min-width: map.get($controls, compact-height);
+    min-height: map.get($controls, compact-height);
+    padding: 0;
+    border: 0;
+    border-radius: map.get($radii, control);
+    background: transparent;
+    box-shadow: none;
+    color: map.get($colors, bar-text);
+    -gtk-icon-size: map.get($controls, icon-size);
+    transition: background-color map.get($motion, quick) ease;
+}
+
+@mixin compact-action {
+    @include flat-button;
+    min-width: 0;
+    padding: 0 map.get($spacing, 5);
+    color: map.get($colors, label-secondary);
+    font-size: map.get($font-sizes, caption);
+    font-weight: map.get($font-weights, semibold);
+
+    &:hover {
+        background: map.get($colors, bar-hover);
+        color: map.get($colors, bar-text);
+    }
+
+    &:active,
+    &:checked {
+        background: map.get($colors, bar-pressed);
+        color: map.get($colors, bar-text);
+    }
+}
+
+button.topbar-action-button {
+    min-height: map.get($controls, compact-height);
+    padding: 0 map.get($spacing, 5);
+    background: map.get($colors, bar-surface);
+    color: map.get($colors, bar-text);
+    border: 1px solid map.get($colors, bar-edge);
+    border-radius: map.get($radii, popover);
+    box-shadow: none;
+    font-size: map.get($font-sizes, label);
+    font-weight: map.get($font-weights, semibold);
+    -gtk-icon-size: map.get($controls, icon-size);
+    transition: background-color map.get($motion, standard) ease,
+        border-color map.get($motion, standard) ease,
+        opacity map.get($motion, exit) ease;
+
+    &:hover {
+        background: map.get($colors, bar-hover);
+    }
+
+    &:active,
+    &:checked {
+        background: map.get($colors, bar-pressed);
+        border-color: rgba(255, 255, 255, 0.25);
+    }
+}
+
+window.topbar {
+    &-trigger,
+    &-panel,
+    &-toast-window {
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+    }
+}
+
+.topbar {
+    &-content {
+        background: map.get($colors, bar-bg);
+        color: map.get($colors, bar-text);
+        border: 1px solid map.get($colors, bar-edge);
+        border-radius: map.get($radii, surface);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+        font-family: $font-family;
+    }
+
+    &-end {
+        margin-right: map.get($spacing, 5);
+    }
+}
+
+.topbar-feature-divider {
+    min-width: 1px;
+    min-height: map.get($controls, icon-size);
+    margin: 0 map.get($spacing, 4);
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+menubutton.topbar {
+    &-feature-button {
+        > button {
+            @include feature-button;
+
+            &:hover {
+                @include feature-button-hover;
+            }
+
+            &:checked {
+                @include feature-button-pressed;
+            }
+
+            image {
+                -gtk-icon-size: map.get($controls, icon-size);
+            }
+        }
+    }
+
+    &-labeled-button > button {
+        padding: 0 map.get($spacing, 5);
+    }
+}
+
+menubutton.topbar-feature-button.muted > button {
+    color: map.get($colors, status-danger);
+}
+
+button.topbar {
+    &-icon-button {
+        @include feature-button;
+
+        &:hover {
+            @include feature-button-hover;
+        }
+
+        &:active,
+        &:checked {
+            @include feature-button-pressed;
+        }
+
+        image {
+            -gtk-icon-size: map.get($controls, icon-size);
+        }
+    }
+
+    &-dismiss {
+        @include flat-button;
+
+        &:hover {
+            background: map.get($colors, bar-hover);
+        }
+    }
+}
