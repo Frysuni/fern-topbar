@@ -3,7 +3,12 @@
   "monitor": null,
   "features": {
     "start": [],
-    "center": [],
+    "center": [
+      {
+        "name": "clock",
+        "mode": true
+      }
+    ],
     "end": []
   },
   "reveal": {

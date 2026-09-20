@@ -1,4 +1,5 @@
 pub mod availability;
+pub mod clock;
 mod mounted;
 mod registry;
 

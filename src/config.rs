@@ -117,7 +117,7 @@ impl Default for Features {
 
         Self {
             start: vec![],
-            center: vec![],
+            center: vec![option(FeatureId::Clock, enabled)],
             end: vec![],
         }
     }
@@ -232,6 +232,42 @@ mod tests {
         assert!(features.start.is_empty());
         assert!(features.center.is_empty());
         assert!(features.end.is_empty());
+    }
+
+    #[test]
+    fn repeated_features_are_rejected_within_and_between_groups() {
+        let enabled = FeatureOptions {
+            name: FeatureId::Clock,
+            mode: FeatureMode::Switch(true),
+        };
+
+        let disabled = FeatureOptions {
+            name: FeatureId::Clock,
+            mode: FeatureMode::Switch(false),
+        };
+
+        for features in [
+            Features {
+                start: vec![enabled, disabled],
+                center: Vec::new(),
+                end: Vec::new(),
+            },
+            Features {
+                start: vec![enabled],
+                center: vec![disabled],
+                end: Vec::new(),
+            },
+        ] {
+            let config = Config {
+                features,
+                ..Config::default()
+            };
+
+            let error = config.into_settings().unwrap_err();
+
+            assert!(error.contains("clock"));
+            assert!(error.contains("more than once"));
+        }
     }
 
     #[test]

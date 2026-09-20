@@ -1,0 +1,109 @@
+@use "sass:map";
+@use "../variables" as *;
+
+menubutton.topbar {
+    &-time > button {
+        padding: 0 11px;
+        font-family: $font-family;
+        font-size: 13px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+.topbar-calendar {
+    padding: 5px 6px 3px;
+    min-width: 282px;
+
+    &-header {
+        min-height: 32px;
+    }
+
+    &-title {
+        color: map.get($colors, bar-text);
+        font-size: 17px;
+        font-weight: 700;
+    }
+
+    &-weekday {
+        min-width: 35px;
+        min-height: 24px;
+        color: map.get($colors, bar-subtle);
+        font-size: 11px;
+        font-weight: 700;
+    }
+}
+
+button.topbar-calendar {
+    &-nav {
+        min-width: 29px;
+        min-height: 29px;
+        padding: 0;
+        border: 1px solid transparent;
+        border-radius: map.get($radii, control);
+        background: transparent;
+        box-shadow: none;
+        color: map.get($colors, bar-muted);
+        -gtk-icon-size: 17px;
+        transition: background-color 140ms ease, color 140ms ease;
+
+        &:hover {
+            background: map.get($colors, bar-hover);
+            color: map.get($colors, bar-text);
+        }
+
+        &:active {
+            background: map.get($colors, bar-pressed);
+        }
+    }
+
+    &-day {
+        min-width: 35px;
+        min-height: 35px;
+        padding: 0;
+        border: 1px solid transparent;
+        border-radius: map.get($radii, control);
+        background: transparent;
+        box-shadow: none;
+        color: map.get($colors, bar-text);
+        font-size: 12px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        transition: background-color 130ms ease, color 130ms ease;
+
+        &.other-month {
+            color: map.get($colors, bar-subtle);
+        }
+
+        &:hover {
+            background: map.get($colors, bar-hover);
+        }
+
+        &.today {
+            border-color: rgba(255, 255, 255, 0.34);
+        }
+
+        &.selected,
+        &.selected:hover {
+            background: map.get($colors, bar-accent);
+            border-color: map.get($colors, bar-accent);
+            color: #141416;
+        }
+    }
+
+    &-today {
+        min-height: 30px;
+        padding: 0 10px;
+        border: 1px solid map.get($colors, bar-edge);
+        border-radius: map.get($radii, control);
+        background: map.get($colors, bar-raised);
+        box-shadow: none;
+        color: map.get($colors, bar-text);
+        font-size: 12px;
+        font-weight: 600;
+
+        &:hover {
+            background: map.get($colors, bar-hover);
+        }
+    }
+}
