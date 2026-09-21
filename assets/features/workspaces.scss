@@ -1,0 +1,65 @@
+@use "sass:map";
+@use "../variables" as *;
+
+$workspaces: (
+    hit-width: 20px,
+    hit-height: 28px,
+    dot-size: 6px,
+    active-size: 8px,
+    halo-size: 3px,
+);
+
+.topbar {
+    &-workspaces {
+        margin-left: map.get($spacing, 5);
+    }
+}
+
+button.workspace-dot {
+    &-button {
+        min-width: map.get($workspaces, hit-width);
+        min-height: map.get($workspaces, hit-height);
+        padding: 0;
+        border: 0;
+        border-radius: map.get($radii, control);
+        background: transparent;
+        box-shadow: none;
+        transition: background-color map.get($motion, quick) ease;
+
+        &:hover {
+            background: transparent;
+
+            .workspace-dot-mark {
+                background: map.get($colors, bar-muted);
+                box-shadow: 0 0 0 map.get($workspaces, halo-size) map.get($colors, bar-edge);
+            }
+        }
+
+        &:active {
+            background: transparent;
+
+            .workspace-dot-mark {
+                background: map.get($colors, bar-text);
+            }
+        }
+
+        .workspace-dot-mark {
+            min-width: map.get($workspaces, dot-size);
+            min-height: map.get($workspaces, dot-size);
+            border-radius: map.get($radii, round);
+            background: map.get($colors, bar-subtle);
+            box-shadow: 0 0 0 0 transparent;
+            transition: background-color map.get($motion, quick) ease, box-shadow map.get($motion, quick) ease;
+        }
+
+        &.active .workspace-dot-mark {
+            min-width: map.get($workspaces, active-size);
+            min-height: map.get($workspaces, active-size);
+            background: map.get($colors, bar-accent);
+        }
+
+        &.urgent .workspace-dot-mark {
+            background: map.get($colors, bar-urgent);
+        }
+    }
+}

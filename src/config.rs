@@ -116,7 +116,7 @@ impl Default for Features {
         let option = |name, mode| FeatureOptions { name, mode };
 
         Self {
-            start: vec![],
+            start: vec![option(FeatureId::Workspaces, enabled)],
             center: vec![option(FeatureId::Clock, enabled)],
             end: vec![],
         }

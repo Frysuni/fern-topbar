@@ -2,6 +2,7 @@
 
 use super::{
     FeatureMountContext, FeatureServices, MountedFeature, availability::Availability, clock,
+    workspaces,
 };
 use crate::config::{FeatureMode, FeatureOptions, Features};
 use serde::Deserialize;
@@ -10,6 +11,7 @@ use serde::Deserialize;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FeatureId {
+    Workspaces,
     Clock,
 }
 
@@ -38,11 +40,18 @@ struct FeatureRegistration {
 
 /// Shared registration list for configuration resolution, names and readiness channels.
 /// Register each new FeatureId here; availability derives its keys from this list.
-const FEATURE_REGISTRY: &[FeatureRegistration] = &[FeatureRegistration {
-    id: FeatureId::Clock,
-    name: "clock",
-    definition: clock::definition,
-}];
+const FEATURE_REGISTRY: &[FeatureRegistration] = &[
+    FeatureRegistration {
+        id: FeatureId::Workspaces,
+        name: "workspaces",
+        definition: workspaces::definition,
+    },
+    FeatureRegistration {
+        id: FeatureId::Clock,
+        name: "clock",
+        definition: clock::definition,
+    },
+];
 
 /// Creates the UI owner; backend failures are reported through `Availability`.
 pub type Mount = fn(FeatureMountContext) -> MountedFeature;

@@ -32,7 +32,7 @@ pub fn start(
             availability::{Availability, UnavailableReason},
         };
 
-        for feature in [] {
+        for feature in [FeatureId::Workspaces] {
             availability
                 .publisher(feature)
                 .set(Availability::Unavailable(

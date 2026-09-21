@@ -1,7 +1,8 @@
 use super::{Command, Workspace};
 use crate::backend::{Event as BackendEvent, reconnect::ReconnectBackoff};
-use crate::features::availability::{
-    self, Availability, AvailabilityPublisher, ProbeError, UnavailableReason,
+use crate::features::{
+    FeatureId,
+    availability::{self, Availability, AvailabilityPublisher, ProbeError, UnavailableReason},
 };
 use crate::runtime;
 use niri_ipc::state::{EventStreamStatePart, WorkspacesState};
@@ -56,11 +57,11 @@ type Result<T> = std::result::Result<T, Error>;
 pub fn start(
     socket_path: PathBuf,
     events: UnboundedSender<BackendEvent>,
-    _availability: availability::FeatureAvailability,
+    availability: availability::FeatureAvailability,
 ) -> UnboundedSender<Command> {
     let (commands, command_receiver) = mpsc::unbounded_channel();
     let writer = CommandWriter::new(socket_path.clone(), command_receiver);
-    let reader = EventReader::new(socket_path, events);
+    let reader = EventReader::new(socket_path, events).with_availability(availability);
 
     runtime::spawn(reader.run());
     runtime::spawn(writer.run());
@@ -139,6 +140,12 @@ impl EventReader {
             events,
             availability: std::array::from_fn(|_| AvailabilityPublisher::default()),
         }
+    }
+
+    pub fn with_availability(mut self, availability: availability::FeatureAvailability) -> Self {
+        self.availability[0] = availability.publisher(FeatureId::Workspaces);
+
+        self
     }
 
     pub async fn run(self) {

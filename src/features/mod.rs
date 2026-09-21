@@ -2,6 +2,7 @@ pub mod availability;
 pub mod clock;
 mod mounted;
 mod registry;
+pub mod workspaces;
 
 use crate::{
     backend::{self, wm::state::WindowManagerState},

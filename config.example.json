@@ -2,7 +2,12 @@
   "scale": 1,
   "monitor": null,
   "features": {
-    "start": [],
+    "start": [
+      {
+        "name": "workspaces",
+        "mode": true
+      }
+    ],
     "center": [
       {
         "name": "clock",
