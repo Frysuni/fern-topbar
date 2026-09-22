@@ -143,7 +143,10 @@ impl EventReader {
     }
 
     pub fn with_availability(mut self, availability: availability::FeatureAvailability) -> Self {
-        self.availability[0] = availability.publisher(FeatureId::Workspaces);
+        self.availability = [
+            availability.publisher(FeatureId::Workspaces),
+            availability.publisher(FeatureId::KeyboardLayout),
+        ];
 
         self
     }
@@ -453,6 +456,83 @@ mod tests {
         message.push(b'\n');
 
         message
+    }
+
+    #[tokio::test]
+    async fn publishes_readiness_after_a_late_socket_and_restores_it_after_disconnect() {
+        use crate::features::availability::tests::wait_for;
+
+        let directory =
+            std::env::temp_dir().join(format!("topbar-niri-readiness-{}", std::process::id()));
+
+        fs::create_dir_all(&directory).unwrap();
+
+        let path = directory.join("socket");
+        let availability = availability::FeatureAvailability::default();
+        let mut workspaces = availability.subscribe(FeatureId::Workspaces);
+        let mut layout = availability.subscribe(FeatureId::KeyboardLayout);
+        let (events, receiver) = mpsc::unbounded_channel();
+        let reader = EventReader::new(path.clone(), events).with_availability(availability);
+        let worker = tokio::spawn(reader.run());
+
+        wait_for(
+            &mut workspaces,
+            Availability::Unavailable(UnavailableReason::ServiceMissing),
+        )
+        .await;
+
+        let listener = UnixListener::bind(&path).unwrap();
+
+        for _ in 0..2 {
+            let (stream, _) = timeout(Duration::from_secs(2), listener.accept())
+                .await
+                .unwrap()
+                .unwrap();
+
+            let mut stream = BufReader::new(stream);
+            let mut request = String::new();
+
+            stream.read_line(&mut request).await.unwrap();
+            assert!(matches!(
+                serde_json::from_str::<Request>(&request).unwrap(),
+                Request::EventStream
+            ));
+            stream
+                .get_mut()
+                .write_all(&reply_message(Ok(Response::Handled)))
+                .await
+                .unwrap();
+
+            for event in [
+                Event::WorkspacesChanged {
+                    workspaces: Vec::new(),
+                },
+                Event::KeyboardLayoutsChanged {
+                    keyboard_layouts: niri_ipc::KeyboardLayouts {
+                        names: vec!["English".into()],
+                        current_idx: 0,
+                    },
+                },
+            ] {
+                let mut message = serde_json::to_vec(&event).unwrap();
+                message.push(b'\n');
+                stream.get_mut().write_all(&message).await.unwrap();
+            }
+
+            wait_for(&mut workspaces, Availability::Available).await;
+            wait_for(&mut layout, Availability::Available).await;
+            drop(stream);
+            wait_for(&mut workspaces, Availability::Failed(ProbeError::Connect)).await;
+            wait_for(&mut layout, Availability::Failed(ProbeError::Connect)).await;
+        }
+
+        drop(receiver);
+        timeout(Duration::from_secs(1), worker)
+            .await
+            .unwrap()
+            .unwrap();
+        drop(listener);
+        fs::remove_dir_all(directory).unwrap();
     }
 
     #[tokio::test]

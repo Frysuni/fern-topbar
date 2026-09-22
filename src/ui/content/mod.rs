@@ -137,4 +137,110 @@ mod tests {
 
         children
     }
+
+    #[gtk::test]
+    fn unavailable_slots_return_in_order_without_recreating_components() {
+        use crate::features::availability::{Availability, UnavailableReason};
+
+        let config = Features {
+            start: vec![
+                FeatureOptions {
+                    name: FeatureId::Clock,
+                    mode: FeatureMode::Switch(true),
+                },
+                FeatureOptions {
+                    name: FeatureId::KeyboardLayout,
+                    mode: FeatureMode::Auto(Auto::Auto),
+                },
+                FeatureOptions {
+                    name: FeatureId::Workspaces,
+                    mode: FeatureMode::Switch(true),
+                },
+            ],
+            center: Vec::new(),
+            end: Vec::new(),
+        };
+
+        let services = FeatureServices::default();
+        let availability = services.availability.clone();
+
+        services
+            .window_manager
+            .set_keyboard_layout(Some("English".into()));
+
+        let content = PanelContent::builder()
+            .launch(PanelContentInit {
+                features: features::resolve(config),
+                services,
+                popovers: PopoverScope::default(),
+            })
+            .detach();
+
+        let group = content
+            .widget()
+            .start_widget()
+            .unwrap()
+            .first_child()
+            .unwrap();
+
+        let slots = children(&group);
+
+        assert_eq!(slots.len(), 5);
+
+        let layout = slots[2].first_child().unwrap();
+        let main = gtk::glib::MainContext::default();
+        let settle = |condition: &dyn Fn() -> bool| {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+
+            while !condition() {
+                while main.pending() {
+                    main.iteration(false);
+                }
+
+                assert!(
+                    std::time::Instant::now() < deadline,
+                    "UI state did not settle: slots {:?}, roots {:?}",
+                    slots
+                        .iter()
+                        .map(|widget| widget.get_visible())
+                        .collect::<Vec<_>>(),
+                    slots
+                        .iter()
+                        .map(|widget| widget.first_child().map(|child| child.get_visible()))
+                        .collect::<Vec<_>>()
+                );
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+        };
+
+        let missing = Availability::Unavailable(UnavailableReason::ServiceMissing);
+
+        availability
+            .publisher(FeatureId::KeyboardLayout)
+            .set(missing);
+        availability
+            .publisher(FeatureId::Workspaces)
+            .set(Availability::Available);
+        settle(&|| {
+            slots[0].get_visible()
+                && slots[4].get_visible()
+                && !slots[2].get_visible()
+                && slots[3].get_visible()
+        });
+        assert!(!slots[1].get_visible());
+        availability
+            .publisher(FeatureId::KeyboardLayout)
+            .set(Availability::Available);
+        settle(&|| slots[2].get_visible() && slots[1].get_visible() && slots[3].get_visible());
+        assert_eq!(slots[2].first_child().unwrap(), layout);
+        availability
+            .publisher(FeatureId::KeyboardLayout)
+            .set(missing);
+        settle(&|| !slots[2].get_visible() && !slots[1].get_visible());
+        availability
+            .publisher(FeatureId::KeyboardLayout)
+            .set(Availability::Available);
+        settle(&|| slots[2].get_visible() && slots[1].get_visible());
+        assert_eq!(slots[2].first_child().unwrap(), layout);
+    }
 }

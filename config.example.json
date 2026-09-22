@@ -14,7 +14,12 @@
         "mode": true
       }
     ],
-    "end": []
+    "end": [
+      {
+        "name": "keyboard_layout",
+        "mode": true
+      }
+    ]
   },
   "reveal": {
     "on_niri_overview": true,

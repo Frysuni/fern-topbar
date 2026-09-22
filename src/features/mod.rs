@@ -1,5 +1,6 @@
 pub mod availability;
 pub mod clock;
+pub mod keyboard_layout;
 mod mounted;
 mod registry;
 pub mod workspaces;

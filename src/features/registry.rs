@@ -2,7 +2,7 @@
 
 use super::{
     FeatureMountContext, FeatureServices, MountedFeature, availability::Availability, clock,
-    workspaces,
+    keyboard_layout, workspaces,
 };
 use crate::config::{FeatureMode, FeatureOptions, Features};
 use serde::Deserialize;
@@ -13,6 +13,7 @@ use serde::Deserialize;
 pub enum FeatureId {
     Workspaces,
     Clock,
+    KeyboardLayout,
 }
 
 impl FeatureId {
@@ -50,6 +51,11 @@ const FEATURE_REGISTRY: &[FeatureRegistration] = &[
         id: FeatureId::Clock,
         name: "clock",
         definition: clock::definition,
+    },
+    FeatureRegistration {
+        id: FeatureId::KeyboardLayout,
+        name: "keyboard_layout",
+        definition: keyboard_layout::definition,
     },
 ];
 

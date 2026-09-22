@@ -32,7 +32,7 @@ pub fn start(
             availability::{Availability, UnavailableReason},
         };
 
-        for feature in [FeatureId::Workspaces] {
+        for feature in [FeatureId::Workspaces, FeatureId::KeyboardLayout] {
             availability
                 .publisher(feature)
                 .set(Availability::Unavailable(
