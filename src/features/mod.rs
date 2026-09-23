@@ -1,14 +1,18 @@
+pub mod audio;
 pub mod availability;
 pub mod clock;
 pub mod keyboard_layout;
 mod mounted;
 mod registry;
+mod sound;
 pub mod workspaces;
 
 use crate::{
     backend::{self, wm::state::WindowManagerState},
     ui::{core::PopoverScope, monitor::MonitorSelection},
 };
+
+pub(crate) use sound::AudioService;
 
 pub use mounted::MountedFeature;
 pub use registry::{EnabledFeature, EnabledFeatures, FeatureDefinition, FeatureId, resolve};
@@ -17,6 +21,7 @@ pub use registry::{EnabledFeature, EnabledFeatures, FeatureDefinition, FeatureId
 #[derive(Default)]
 pub struct FeatureServices {
     pub availability: availability::FeatureAvailability,
+    pub audio: AudioService,
     pub window_manager: WindowManagerState,
     pub wm_commands: Option<tokio::sync::mpsc::UnboundedSender<backend::Command>>,
     pub monitor_selection: MonitorSelection,
@@ -25,6 +30,7 @@ pub struct FeatureServices {
 pub struct FeatureMountContext {
     pub availability: availability::FeatureAvailability,
     pub popovers: PopoverScope,
+    pub audio: AudioService,
     pub window_manager: WindowManagerState,
     pub wm_commands: Option<tokio::sync::mpsc::UnboundedSender<backend::Command>>,
     pub monitor_selection: MonitorSelection,
@@ -35,6 +41,7 @@ impl FeatureMountContext {
         Self {
             availability: services.availability.clone(),
             popovers,
+            audio: services.audio.clone(),
             window_manager: services.window_manager.clone(),
             wm_commands: services.wm_commands.clone(),
             monitor_selection: services.monitor_selection.clone(),

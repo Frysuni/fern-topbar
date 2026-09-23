@@ -16,6 +16,10 @@
     ],
     "end": [
       {
+        "name": "audio",
+        "mode": true
+      },
+      {
         "name": "keyboard_layout",
         "mode": true
       }

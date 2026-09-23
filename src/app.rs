@@ -201,6 +201,7 @@ fn start_application_runtime(settings: config::Settings) -> Result<ui::PanelInit
 
     let services = features::FeatureServices {
         availability,
+        audio: features::AudioService::default(),
         window_manager,
         wm_commands: backend.wm_commands.clone(),
         monitor_selection: MonitorSelection::default(),

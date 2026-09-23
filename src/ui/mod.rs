@@ -930,6 +930,7 @@ mod dismissal_tests {
                 features,
                 services: FeatureServices {
                     availability: features::availability::FeatureAvailability::default(),
+                    audio: features::AudioService::default(),
                     window_manager: WindowManagerState::default(),
                     monitor_selection: MonitorSelection::default(),
                     wm_commands: None,

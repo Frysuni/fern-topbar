@@ -118,7 +118,10 @@ impl Default for Features {
         Self {
             start: vec![option(FeatureId::Workspaces, enabled)],
             center: vec![option(FeatureId::Clock, enabled)],
-            end: vec![option(FeatureId::KeyboardLayout, enabled)],
+            end: vec![
+                option(FeatureId::Audio, enabled),
+                option(FeatureId::KeyboardLayout, enabled),
+            ],
         }
     }
 }
