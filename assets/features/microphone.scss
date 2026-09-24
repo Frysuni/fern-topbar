@@ -1,0 +1,16 @@
+@use "sass:map";
+
+$microphone-menu: (
+    width: 232px,
+    row-height: 34px,
+);
+
+.topbar-microphone {
+    &-menu {
+        min-width: map.get($microphone-menu, width);
+    }
+
+    &-row {
+        min-height: map.get($microphone-menu, row-height);
+    }
+}

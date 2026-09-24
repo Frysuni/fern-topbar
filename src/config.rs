@@ -120,6 +120,7 @@ impl Default for Features {
             center: vec![option(FeatureId::Clock, enabled)],
             end: vec![
                 option(FeatureId::Audio, enabled),
+                option(FeatureId::Microphone, enabled),
                 option(FeatureId::KeyboardLayout, enabled),
             ],
         }

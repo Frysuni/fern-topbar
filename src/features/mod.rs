@@ -2,6 +2,7 @@ pub mod audio;
 pub mod availability;
 pub mod clock;
 pub mod keyboard_layout;
+pub mod microphone;
 mod mounted;
 mod registry;
 mod sound;

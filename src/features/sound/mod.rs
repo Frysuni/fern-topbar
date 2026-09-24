@@ -65,7 +65,7 @@ impl AudioRuntime {
     fn start(availability: &FeatureAvailability) -> Self {
         let mut backend = backend::Backend::start([
             availability.publisher(FeatureId::Audio),
-            crate::features::availability::AvailabilityPublisher::default(),
+            availability.publisher(FeatureId::Microphone),
         ]);
 
         let controls = backend.controls();
