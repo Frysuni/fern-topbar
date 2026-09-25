@@ -1,8 +1,8 @@
 //! Typed feature definitions and resolution of the configured groups.
 
 use super::{
-    FeatureMountContext, FeatureServices, MountedFeature, audio, availability::Availability, clock,
-    keyboard_layout, microphone, workspaces,
+    FeatureMountContext, FeatureServices, MountedFeature, audio, availability::Availability,
+    brightness, clock, keyboard_layout, microphone, workspaces,
 };
 use crate::config::{FeatureMode, FeatureOptions, Features};
 use serde::Deserialize;
@@ -16,6 +16,7 @@ pub enum FeatureId {
     Audio,
     Microphone,
     KeyboardLayout,
+    Brightness,
 }
 
 impl FeatureId {
@@ -68,6 +69,11 @@ const FEATURE_REGISTRY: &[FeatureRegistration] = &[
         id: FeatureId::KeyboardLayout,
         name: "keyboard_layout",
         definition: keyboard_layout::definition,
+    },
+    FeatureRegistration {
+        id: FeatureId::Brightness,
+        name: "brightness",
+        definition: brightness::definition,
     },
 ];
 

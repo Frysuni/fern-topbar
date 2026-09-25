@@ -26,6 +26,10 @@
       {
         "name": "keyboard_layout",
         "mode": true
+      },
+      {
+        "name": "brightness",
+        "mode": "auto"
       }
     ]
   },

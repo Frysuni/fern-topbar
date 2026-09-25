@@ -1,5 +1,6 @@
 pub mod audio;
 pub mod availability;
+pub mod brightness;
 pub mod clock;
 pub mod keyboard_layout;
 pub mod microphone;

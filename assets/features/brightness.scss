@@ -1,0 +1,20 @@
+@use "sass:map";
+@use "../variables" as *;
+@use "../slider" as *;
+
+$brightness-menu: (
+    width: 220px,
+    row-height: 34px,
+);
+
+.topbar-slider {
+    &-row {
+        min-width: map.get($brightness-menu, width);
+        min-height: map.get($brightness-menu, row-height);
+        @include range-slider;
+
+        image {
+            -gtk-icon-size: map.get($controls, icon-size);
+        }
+    }
+}
