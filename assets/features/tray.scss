@@ -1,0 +1,102 @@
+@use "sass:map";
+@use "../variables" as *;
+
+$tray-menu: (
+    width: 220px,
+    row-height: 34px,
+    row-block-padding: 4px,
+    row-inline-padding: 10px,
+    header-height: 36px,
+    header-block-padding: 4px,
+    header-inline-padding: 8px,
+    header-gap: 6px,
+);
+
+.topbar-tray {
+    &-menu {
+        min-width: map.get($tray-menu, width);
+        padding: 0;
+
+        &-header {
+            min-height: map.get($tray-menu, header-height);
+            padding: map.get($tray-menu, header-block-padding) map.get($tray-menu, header-inline-padding);
+            margin-bottom: map.get($tray-menu, header-gap);
+            border-radius: map.get($radii, control);
+            background: map.get($colors, bar-raised);
+        }
+
+        &-title {
+            color: map.get($colors, label-secondary);
+            font-size: map.get($font-sizes, menu-title);
+            font-weight: map.get($font-weights, semibold);
+        }
+    }
+
+    &-separator {
+        margin: map.get($spacing, 3) map.get($spacing, 4);
+        min-height: 1px;
+        border: 0;
+        background-color: map.get($colors, bar-edge);
+    }
+
+    &-empty {
+        color: map.get($colors, label-secondary);
+        padding: map.get($spacing, 7);
+        font-size: map.get($font-sizes, body);
+        font-weight: map.get($font-weights, regular);
+    }
+
+    &-label {
+        color: map.get($colors, label-primary);
+    }
+
+    &-chevron {
+        color: map.get($colors, label-tertiary);
+    }
+
+    &-shortcut {
+        color: map.get($colors, label-tertiary);
+        font-size: map.get($font-sizes, menu-meta);
+        font-weight: map.get($font-weights, regular);
+        margin-left: map.get($spacing, 7);
+    }
+}
+
+button.topbar-tray {
+    &-back,
+    &-menu-row {
+        border: 0;
+        box-shadow: none;
+        color: map.get($colors, label-primary);
+        background: transparent;
+        border-radius: map.get($radii, control);
+        transition: background-color map.get($motion, quick) ease, color map.get($motion, quick) ease;
+
+        &:hover {
+            background: map.get($colors, bar-hover);
+            color: map.get($colors, bar-text);
+
+            .topbar-tray-label {
+                color: map.get($colors, label-primary);
+            }
+        }
+    }
+
+    &-back {
+        min-width: 24px;
+        min-height: 24px;
+        padding: 0;
+    }
+
+    &-menu-row {
+        min-height: map.get($tray-menu, row-height);
+        padding: map.get($tray-menu, row-block-padding) map.get($tray-menu, row-inline-padding);
+        font-size: map.get($font-sizes, menu-item);
+        font-weight: map.get($font-weights, regular);
+
+        &:disabled {
+            color: map.get($colors, label-tertiary);
+            opacity: 0.55;
+        }
+    }
+}

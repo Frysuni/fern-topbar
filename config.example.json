@@ -30,6 +30,10 @@
       {
         "name": "brightness",
         "mode": "auto"
+      },
+      {
+        "name": "tray",
+        "mode": "auto"
       }
     ]
   },

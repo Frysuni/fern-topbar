@@ -123,6 +123,7 @@ impl Default for Features {
                 option(FeatureId::Microphone, enabled),
                 option(FeatureId::KeyboardLayout, enabled),
                 option(FeatureId::Brightness, auto),
+                option(FeatureId::Tray, auto),
             ],
         }
     }

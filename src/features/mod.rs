@@ -7,6 +7,7 @@ pub mod microphone;
 mod mounted;
 mod registry;
 mod sound;
+pub mod tray;
 pub mod workspaces;
 
 use crate::{
