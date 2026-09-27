@@ -357,4 +357,41 @@ mod tests {
             window.destroy();
         }
     }
+
+    #[gtk::test]
+    fn popover_content_and_chrome_scale_together_without_double_wrapping() {
+        relm4::set_global_css(include_str!(concat!(env!("OUT_DIR"), "/styles.css")));
+
+        let scale = UiScale::new(1.5).unwrap();
+        let menu = gtk::Popover::new();
+        menu.add_css_class("topbar-menu");
+        menu.add_css_class("topbar-network-menu");
+        menu.set_offset(0, 12);
+
+        let content = gtk::Label::new(Some("Network"));
+
+        menu.set_child(Some(&content));
+        scale.configure_popover(&menu);
+
+        let wrapper = menu.child().unwrap();
+        let surface = wrapper.first_child().unwrap();
+
+        assert!(surface.has_css_class("topbar-scaled-surface"));
+        assert!(surface.has_css_class("topbar-network-menu"));
+
+        let minimum = surface.measure(gtk::Orientation::Horizontal, -1).0;
+
+        assert!(minimum >= 360);
+        assert_eq!(
+            wrapper.measure(gtk::Orientation::Horizontal, -1).0,
+            scale.pixels(minimum)
+        );
+        assert_eq!(UiScale::for_widget(&content), scale);
+        assert_eq!(menu.offset(), (0, 18));
+
+        scale.configure_popover(&menu);
+
+        assert_eq!(menu.child(), Some(wrapper));
+        assert_eq!(menu.offset(), (0, 18));
+    }
 }

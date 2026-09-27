@@ -2,7 +2,7 @@
 
 use super::{
     FeatureMountContext, FeatureServices, MountedFeature, audio, availability::Availability,
-    brightness, clock, keyboard_layout, microphone, tray, workspaces,
+    brightness, clock, keyboard_layout, microphone, network, tray, workspaces,
 };
 use crate::config::{FeatureMode, FeatureOptions, Features};
 use serde::Deserialize;
@@ -18,6 +18,7 @@ pub enum FeatureId {
     KeyboardLayout,
     Brightness,
     Tray,
+    Network,
 }
 
 impl FeatureId {
@@ -80,6 +81,11 @@ const FEATURE_REGISTRY: &[FeatureRegistration] = &[
         id: FeatureId::Tray,
         name: "tray",
         definition: tray::definition,
+    },
+    FeatureRegistration {
+        id: FeatureId::Network,
+        name: "network",
+        definition: network::definition,
     },
 ];
 
@@ -162,5 +168,54 @@ mod tests {
 
             publisher.set(Availability::Checking);
         }
+    }
+
+    #[test]
+    fn resolution_preserves_groups_and_order_after_filtering() {
+        let config = Features {
+            start: vec![
+                FeatureOptions {
+                    name: FeatureId::KeyboardLayout,
+                    mode: FeatureMode::Switch(true),
+                },
+                FeatureOptions {
+                    name: FeatureId::Network,
+                    mode: FeatureMode::Switch(false),
+                },
+                FeatureOptions {
+                    name: FeatureId::Clock,
+                    mode: FeatureMode::Auto(Auto::Auto),
+                },
+            ],
+            center: vec![FeatureOptions {
+                name: FeatureId::Workspaces,
+                mode: FeatureMode::Switch(true),
+            }],
+            end: vec![
+                FeatureOptions {
+                    name: FeatureId::Audio,
+                    mode: FeatureMode::Switch(true),
+                },
+                FeatureOptions {
+                    name: FeatureId::Microphone,
+                    mode: FeatureMode::Switch(false),
+                },
+            ],
+        };
+
+        let features = resolve(config);
+        let names = |group: Vec<EnabledFeature>| {
+            group
+                .into_iter()
+                .map(|feature| feature.name)
+                .collect::<Vec<_>>()
+        };
+
+        assert_eq!(
+            names(features.start),
+            [FeatureId::KeyboardLayout, FeatureId::Clock]
+        );
+        assert_eq!(names(features.center), [FeatureId::Workspaces]);
+        assert_eq!(names(features.end), [FeatureId::Audio]);
     }
 }

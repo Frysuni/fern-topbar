@@ -1,0 +1,138 @@
+@use "sass:map";
+@use "../variables" as *;
+@use "../base" as *;
+
+.topbar {
+    &-network-menu {
+        min-width: 360px;
+
+        .topbar-menu-subtitle {
+            font-weight: map.get($font-weights, regular);
+        }
+
+        switch {
+            background: map.get($colors, bar-track);
+            border: 0;
+            box-shadow: none;
+            transition: background-color map.get($motion, quick) ease;
+
+            &:checked {
+                background: map.get($colors, bar-accent);
+            }
+
+            slider {
+                background: map.get($colors, bar-text);
+                border: 0;
+                box-shadow: none;
+            }
+
+            &:checked slider {
+                background: map.get($colors, bar-surface);
+            }
+        }
+    }
+
+    &-network-header {
+        padding: map.get($spacing, 2) map.get($spacing, 2) 0;
+    }
+
+    &-network-block {
+        background: map.get($colors, bar-surface);
+        border: 1px solid map.get($colors, bar-edge);
+        border-radius: map.get($radii, surface);
+        padding: map.get($spacing, 6);
+    }
+
+    &-network-setting {
+        .topbar-menu-title {
+            font-size: map.get($font-sizes, menu-section);
+            font-weight: map.get($font-weights, semibold);
+        }
+    }
+
+    &-network-section-header {
+        border-top: 1px solid map.get($colors, bar-edge);
+        padding-top: map.get($spacing, 4);
+    }
+
+    &-network-section-title {
+        color: map.get($colors, bar-muted);
+        font-size: map.get($font-sizes, menu-meta);
+        font-weight: map.get($font-weights, medium);
+    }
+
+    &-network-row {
+        padding: map.get($spacing, 4);
+        border-radius: map.get($radii, control);
+        min-height: 36px;
+        transition: background-color map.get($motion, standard) ease;
+
+        .topbar-menu-title {
+            font-size: map.get($font-sizes, menu-item);
+            font-weight: map.get($font-weights, medium);
+        }
+
+        &.connected {
+            background: map.get($colors, bar-raised);
+        }
+    }
+
+    &-network-action {
+        @include flat-button;
+        padding: map.get($spacing, 2) map.get($spacing, 4);
+        background: map.get($colors, bar-raised);
+        font-size: map.get($font-sizes, menu-item);
+        font-weight: map.get($font-weights, medium);
+
+        &:hover {
+            background: map.get($colors, bar-hover);
+        }
+
+        &:active {
+            background: map.get($colors, bar-pressed);
+        }
+
+        &:disabled {
+            color: map.get($colors, bar-subtle);
+        }
+
+        &.primary {
+            background: map.get($colors, bar-accent);
+            color: map.get($colors, bar-surface);
+        }
+
+        &.destructive {
+            color: map.get($colors, status-danger);
+        }
+    }
+
+    &-network-icon-action {
+        padding: 0;
+        background: transparent;
+    }
+
+    &-network-prompt {
+        background: map.get($colors, bar-raised);
+        border-radius: map.get($radii, control);
+        padding: map.get($spacing, 6);
+
+        .topbar-menu-title {
+            font-size: map.get($font-sizes, menu-item);
+            font-weight: map.get($font-weights, medium);
+        }
+    }
+
+    &-network-empty {
+        color: map.get($colors, bar-muted);
+        font-size: map.get($font-sizes, menu-item);
+        padding: map.get($spacing, 2) 0;
+    }
+
+    &-network-error {
+        color: map.get($colors, bar-urgent);
+        background: map.get($colors, bar-raised);
+        border-radius: map.get($radii, control);
+        font-size: map.get($font-sizes, caption);
+        padding: map.get($spacing, 4) map.get($spacing, 5);
+    }
+}

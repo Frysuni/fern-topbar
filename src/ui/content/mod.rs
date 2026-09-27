@@ -139,6 +139,91 @@ mod tests {
     }
 
     #[gtk::test]
+    fn configured_groups_mount_components_in_order_with_dividers() {
+        let config = Features {
+            start: vec![
+                FeatureOptions {
+                    name: FeatureId::KeyboardLayout,
+                    mode: FeatureMode::Switch(true),
+                },
+                FeatureOptions {
+                    name: FeatureId::Network,
+                    mode: FeatureMode::Switch(false),
+                },
+                FeatureOptions {
+                    name: FeatureId::Clock,
+                    mode: FeatureMode::Switch(true),
+                },
+            ],
+            center: vec![FeatureOptions {
+                name: FeatureId::Workspaces,
+                mode: FeatureMode::Switch(true),
+            }],
+            end: Vec::new(),
+        };
+
+        let content = PanelContent::builder()
+            .launch(PanelContentInit {
+                features: features::resolve(config),
+                services: FeatureServices {
+                    availability: features::availability::FeatureAvailability::default(),
+                    audio: features::AudioService::default(),
+                    window_manager: WindowManagerState::default(),
+                    wm_commands: None,
+                    monitor_selection: MonitorSelection::default(),
+                },
+                popovers: PopoverScope::default(),
+            })
+            .detach();
+
+        // Each slot wraps its feature group in a layout box.
+        let start = children(
+            &content
+                .widget()
+                .start_widget()
+                .unwrap()
+                .first_child()
+                .unwrap(),
+        );
+
+        let center = children(
+            &content
+                .widget()
+                .center_widget()
+                .unwrap()
+                .first_child()
+                .unwrap(),
+        );
+
+        let end = children(
+            &content
+                .widget()
+                .end_widget()
+                .unwrap()
+                .first_child()
+                .unwrap(),
+        );
+
+        assert_eq!(start.len(), 3);
+        assert!(
+            start[0]
+                .first_child()
+                .unwrap()
+                .has_css_class("topbar-layout")
+        );
+        assert!(start[1].is::<gtk::Separator>());
+        assert!(start[2].first_child().unwrap().has_css_class("topbar-time"));
+        assert_eq!(center.len(), 1);
+        assert!(
+            center[0]
+                .first_child()
+                .unwrap()
+                .has_css_class("topbar-workspaces")
+        );
+        assert!(end.is_empty());
+    }
+
+    #[gtk::test]
     fn unavailable_slots_return_in_order_without_recreating_components() {
         use crate::features::availability::{Availability, UnavailableReason};
 

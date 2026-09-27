@@ -5,6 +5,7 @@ pub mod clock;
 pub mod keyboard_layout;
 pub mod microphone;
 mod mounted;
+pub mod network;
 mod registry;
 mod sound;
 pub mod tray;

@@ -124,6 +124,7 @@ impl Default for Features {
                 option(FeatureId::KeyboardLayout, enabled),
                 option(FeatureId::Brightness, auto),
                 option(FeatureId::Tray, auto),
+                option(FeatureId::Network, auto),
             ],
         }
     }
