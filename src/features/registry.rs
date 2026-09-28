@@ -2,7 +2,7 @@
 
 use super::{
     FeatureMountContext, FeatureServices, MountedFeature, audio, availability::Availability,
-    brightness, clock, keyboard_layout, microphone, network, tray, workspaces,
+    brightness, clock, keyboard_layout, microphone, network, notifications, tray, workspaces,
 };
 use crate::config::{FeatureMode, FeatureOptions, Features};
 use serde::Deserialize;
@@ -19,6 +19,7 @@ pub enum FeatureId {
     Brightness,
     Tray,
     Network,
+    Notifications,
 }
 
 impl FeatureId {
@@ -86,6 +87,11 @@ const FEATURE_REGISTRY: &[FeatureRegistration] = &[
         id: FeatureId::Network,
         name: "network",
         definition: network::definition,
+    },
+    FeatureRegistration {
+        id: FeatureId::Notifications,
+        name: "notifications",
+        definition: notifications::definition,
     },
 ];
 

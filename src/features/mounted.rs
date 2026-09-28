@@ -1,6 +1,6 @@
 //! Concrete owners of mounted feature controllers and their resources.
 
-use super::{brightness, clock, keyboard_layout, network, sound, tray, workspaces};
+use super::{brightness, clock, keyboard_layout, network, notifications, sound, tray, workspaces};
 use relm4::gtk;
 
 /// Keeps each feature's concrete resources alive until its group is dropped.
@@ -12,6 +12,7 @@ pub enum MountedFeature {
     Brightness(brightness::Mounted),
     Tray(tray::Mounted),
     Network(network::Mounted),
+    Notifications(notifications::Mounted),
 }
 
 impl MountedFeature {
@@ -24,6 +25,7 @@ impl MountedFeature {
             Self::Brightness(feature) => feature.widget(),
             Self::Tray(feature) => feature.widget(),
             Self::Network(feature) => feature.widget(),
+            Self::Notifications(feature) => feature.widget(),
         }
     }
 }

@@ -125,6 +125,7 @@ impl Default for Features {
                 option(FeatureId::Brightness, auto),
                 option(FeatureId::Tray, auto),
                 option(FeatureId::Network, auto),
+                option(FeatureId::Notifications, auto),
             ],
         }
     }

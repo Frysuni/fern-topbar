@@ -168,6 +168,7 @@ mod tests {
                 services: FeatureServices {
                     availability: features::availability::FeatureAvailability::default(),
                     audio: features::AudioService::default(),
+                    alerts: Default::default(),
                     window_manager: WindowManagerState::default(),
                     wm_commands: None,
                     monitor_selection: MonitorSelection::default(),

@@ -1,4 +1,5 @@
 use crate::{
+    alerts::service::AlertService,
     backend::{self, wm::state::WindowManagerState},
     config, features, runtime,
     ui::{self, core::PopupId, monitor::MonitorSelection},
@@ -175,6 +176,7 @@ struct ApplicationController {
     state: ApplicationState,
     backend: backend::Backend,
     ui_actions: UnboundedReceiver<ui::Action>,
+    _alerts: AlertService,
 }
 
 impl ApplicationController {
@@ -198,10 +200,12 @@ fn start_application_runtime(settings: config::Settings) -> Result<ui::PanelInit
     let backend = backend::Backend::start(watch_fullscreen, availability.clone())
         .map_err(|error| error.to_string())?;
     let window_manager = WindowManagerState::default();
+    let alerts = AlertService::start();
 
     let services = features::FeatureServices {
         availability,
         audio: features::AudioService::default(),
+        alerts: alerts.publisher(),
         window_manager,
         wm_commands: backend.wm_commands.clone(),
         monitor_selection: MonitorSelection::default(),
@@ -218,6 +222,7 @@ fn start_application_runtime(settings: config::Settings) -> Result<ui::PanelInit
             ),
             backend,
             ui_actions: actions,
+            _alerts: alerts,
         }
         .run(),
     );

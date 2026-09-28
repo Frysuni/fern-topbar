@@ -1,0 +1,361 @@
+@use "sass:map";
+@use "../variables" as *;
+@use "../base" as *;
+
+$notification-menu: (
+    width: 320px,
+    row-padding: 10px,
+    row-gap: 6px,
+    copy-gap: 3px,
+    icon-size: 16px,
+    icon-padding: 6px,
+    content-gap: 9px,
+);
+
+$notification-toast: (
+    min-width: 320px,
+    icon-size: 18px,
+    icon-padding: 8px,
+    content-gap: 11px,
+    hint-gap: 6px,
+    copy-weight: map.get($font-weights, medium),
+    title-weight: map.get($font-weights, semibold),
+    body-weight: map.get($font-weights, medium),
+    action-weight: map.get($font-weights, bold),
+);
+
+$notification-toast-copy-offset: map.get($notification-toast, icon-size) +
+    2 * map.get($notification-toast, icon-padding) +
+    map.get($notification-toast, content-gap);
+
+@mixin toast-surface {
+    background: map.get($colors, bar-surface);
+    color: map.get($colors, bar-text);
+    border: 1px solid map.get($colors, bar-edge);
+    border-radius: map.get($radii, popover);
+}
+
+@mixin toast-button {
+    @include compact-action;
+    color: map.get($colors, bar-text);
+    font-size: map.get($font-sizes, label);
+}
+
+.topbar {
+    &-empty {
+        color: map.get($colors, label-secondary);
+        padding: map.get($spacing, 9);
+    }
+
+    &-notification {
+        &-menu {
+            min-width: map.get($notification-menu, width);
+        }
+
+        &-header {
+            padding: map.get($spacing, 1) map.get($spacing, 1) map.get($spacing, 5);
+        }
+
+        &-list {
+            padding: 0;
+        }
+
+        &-row {
+            padding: 0;
+            border-radius: map.get($radii, control);
+            background: map.get($colors, bar-raised);
+
+            & + & {
+                margin-top: map.get($notification-menu, row-gap);
+            }
+        }
+
+        &-copy {
+            padding: 0;
+        }
+
+        &-content {
+            border-spacing: map.get($notification-menu, content-gap);
+        }
+
+        &-icon {
+            color: map.get($colors, bar-text);
+            background: map.get($colors, bar-surface);
+            border-radius: map.get($radii, control);
+            padding: map.get($notification-menu, icon-padding);
+            -gtk-icon-size: map.get($notification-menu, icon-size);
+        }
+
+        &-title {
+            color: map.get($colors, label-primary);
+            font-size: map.get($font-sizes, menu-section);
+            font-weight: map.get($font-weights, semibold);
+            margin-top: map.get($spacing, 1);
+        }
+
+        &-app {
+            color: map.get($colors, label-secondary);
+            font-size: map.get($font-sizes, caption);
+            font-weight: map.get($font-weights, medium);
+        }
+
+        &-body {
+            color: map.get($colors, label-secondary);
+            font-size: map.get($font-sizes, body);
+            font-weight: map.get($font-weights, regular);
+            margin-top: map.get($notification-menu, copy-gap);
+        }
+
+        &-dismiss {
+            margin-left: map.get($spacing, 2);
+            opacity: 0.72;
+            transition: background-color map.get($motion, standard) ease,
+                box-shadow map.get($motion, standard) ease,
+                color map.get($motion, standard) ease,
+                opacity map.get($motion, standard) ease;
+
+            &:hover {
+                background: map.get($colors, bar-pressed);
+                box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+                color: map.get($colors, label-primary);
+                opacity: 1;
+            }
+        }
+    }
+
+    &-toast {
+        &-container {
+            padding: map.get($spacing, 3);
+            font-family: $font-family;
+        }
+
+        &-list {
+            padding: map.get($spacing, 1) 3px map.get($spacing, 3);
+        }
+
+        &-scroll {
+            background: transparent;
+
+            scrollbar {
+                min-width: 5px;
+            }
+        }
+
+        &-toolbar {
+            margin-bottom: 7px;
+
+            button.topbar-toast-expand {
+                margin-bottom: 0;
+            }
+        }
+
+        &-header {
+            @include toast-surface;
+            padding: map.get($spacing, 2) 7px map.get($spacing, 2) map.get($spacing, 6);
+        }
+
+        &-heading {
+            font-size: map.get($font-sizes, label);
+            font-weight: map.get($font-weights, bold);
+        }
+
+        &-card {
+            min-width: map.get($notification-toast, min-width);
+            padding: 11px 12px;
+            border-spacing: map.get($notification-toast, content-gap);
+            @include toast-surface;
+            box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18);
+            transition: background-color map.get($motion, standard) ease, border-color map.get($motion, standard) ease, opacity map.get($motion, exit) ease;
+
+            &.hovered,
+            &.expanded {
+                background: map.get($colors, bar-raised);
+                border-color: rgba(255, 255, 255, 0.25);
+            }
+
+            &.leaving {
+                opacity: 0;
+            }
+
+            &.hovered .topbar-toast-hint {
+                color: map.get($colors, bar-text);
+            }
+        }
+
+        &-icon {
+            color: map.get($colors, bar-text);
+            background: map.get($colors, bar-raised);
+            border-radius: map.get($radii, control);
+            padding: map.get($notification-toast, icon-padding);
+            -gtk-icon-size: map.get($notification-toast, icon-size);
+        }
+
+        &-content {
+            border-spacing: map.get($notification-toast, content-gap);
+        }
+
+        &-app,
+        &-body {
+            color: map.get($colors, label-secondary);
+            font-size: map.get($font-sizes, body);
+        }
+
+        &-app {
+            font-weight: map.get($notification-toast, copy-weight);
+        }
+
+        &-body {
+            font-weight: map.get($notification-toast, body-weight);
+        }
+
+        &-title {
+            font-size: map.get($font-sizes, menu-title);
+            font-weight: map.get($notification-toast, title-weight);
+        }
+
+        &-hint {
+            color: map.get($colors, label-secondary);
+            font-size: map.get($font-sizes, caption);
+            font-weight: map.get($notification-toast, action-weight);
+        }
+    }
+
+}
+
+button.topbar {
+    &-notification-clear {
+        min-height: map.get($controls, compact-height);
+        padding: 0 map.get($spacing, 4);
+        border: 0;
+        border-radius: map.get($radii, control);
+        background: transparent;
+        box-shadow: none;
+        color: map.get($colors, label-secondary);
+        font-size: map.get($font-sizes, label);
+        font-weight: map.get($font-weights, semibold);
+
+        &:hover {
+            background: map.get($colors, bar-hover);
+            color: map.get($colors, bar-text);
+        }
+    }
+
+    &-toast {
+        &-open {
+            &,
+            &:hover,
+            &:active {
+                min-width: 0;
+                padding: 0;
+                border: 0;
+                border-radius: 0;
+                background: transparent;
+                box-shadow: none;
+                color: map.get($colors, bar-text);
+            }
+
+            &.activatable:hover {
+                color: map.get($colors, label-primary);
+            }
+        }
+
+        &-hint {
+            min-height: 0;
+            margin: map.get($notification-toast, hint-gap) 0 0 $notification-toast-copy-offset;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+
+            &:hover,
+            &:active {
+                background: transparent;
+                box-shadow: none;
+                color: map.get($colors, bar-text);
+            }
+        }
+
+        &-control {
+            @include toast-button;
+            border: 0;
+            border-radius: map.get($radii, control);
+            background: transparent;
+        }
+
+        &-expand {
+            margin-bottom: 5px;
+
+            &.leaving {
+                opacity: 0;
+            }
+        }
+
+        &-close {
+            min-width: 26px;
+            min-height: 26px;
+            padding: 0;
+            border: 0;
+            border-radius: map.get($radii, control);
+            background: transparent;
+            box-shadow: none;
+            color: map.get($colors, label-tertiary);
+            opacity: 0.65;
+            -gtk-icon-size: map.get($controls, icon-size);
+            transition: background-color map.get($motion, standard) ease,
+                box-shadow map.get($motion, standard) ease,
+                color map.get($motion, standard) ease,
+                opacity map.get($motion, standard) ease;
+
+            &:hover {
+                background: map.get($colors, bar-pressed);
+                box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+                color: map.get($colors, label-primary);
+                opacity: 1;
+            }
+        }
+    }
+
+    &-notification-action {
+        font-size: map.get($font-sizes, caption);
+        font-weight: map.get($font-weights, semibold);
+    }
+}
+
+popover.topbar-menu button.topbar-notification-open {
+    &,
+    &:hover,
+    &:active {
+        min-width: 0;
+        padding: map.get($notification-menu, row-padding);
+        border: 0;
+        border-radius: map.get($radii, control);
+        background: transparent;
+        box-shadow: none;
+        color: map.get($colors, bar-text);
+    }
+
+    &.activatable:hover {
+        background: map.get($colors, bar-hover);
+        color: map.get($colors, label-primary);
+    }
+
+    &.activatable:active {
+        background: map.get($colors, bar-pressed);
+    }
+}
+
+.topbar-toast-card.critical,
+.topbar-notification-row.critical {
+    background-image: radial-gradient(
+        ellipse 100px 130px at 0% 32px,
+        rgba(map.get($colors, status-danger), 0.28) 0%,
+        rgba(map.get($colors, status-danger), 0.10) 40%,
+        rgba(map.get($colors, status-danger), 0) 100%
+    );
+}
+
+.topbar-toast-card.low .topbar-toast-title,
+.topbar-notification-row.low .topbar-notification-title {
+    color: map.get($colors, label-secondary);
+}
