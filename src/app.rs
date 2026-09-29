@@ -1,7 +1,9 @@
 use crate::{
-    alerts::service::AlertService,
+    alerts::{battery::BatteryAlerts, service::AlertService},
     backend::{self, wm::state::WindowManagerState},
-    config, features, runtime,
+    config, features,
+    features::FeatureId,
+    runtime,
     ui::{self, core::PopupId, monitor::MonitorSelection},
 };
 use relm4::RelmApp;
@@ -176,6 +178,9 @@ struct ApplicationController {
     state: ApplicationState,
     backend: backend::Backend,
     ui_actions: UnboundedReceiver<ui::Action>,
+    // Source and alert policy survive hiding or removing the battery widget.
+    _battery: backend::battery::Backend,
+    _battery_alerts: runtime::Task,
     _alerts: AlertService,
 }
 
@@ -200,11 +205,16 @@ fn start_application_runtime(settings: config::Settings) -> Result<ui::PanelInit
     let backend = backend::Backend::start(watch_fullscreen, availability.clone())
         .map_err(|error| error.to_string())?;
     let window_manager = WindowManagerState::default();
+    let battery = backend::battery::Backend::start(availability.publisher(FeatureId::Battery));
     let alerts = AlertService::start();
+    let battery_alerts = runtime::Task::spawn(
+        BatteryAlerts::new(battery.state.subscribe(), alerts.publisher().register()).run(),
+    );
 
     let services = features::FeatureServices {
         availability,
         audio: features::AudioService::default(),
+        battery: battery.state.clone(),
         alerts: alerts.publisher(),
         window_manager,
         wm_commands: backend.wm_commands.clone(),
@@ -222,6 +232,8 @@ fn start_application_runtime(settings: config::Settings) -> Result<ui::PanelInit
             ),
             backend,
             ui_actions: actions,
+            _battery: battery,
+            _battery_alerts: battery_alerts,
             _alerts: alerts,
         }
         .run(),

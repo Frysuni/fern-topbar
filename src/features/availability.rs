@@ -144,4 +144,30 @@ pub mod tests {
 
         assert_eq!(result, Err(Availability::Failed(ProbeError::Timeout)));
     }
+
+    #[tokio::test]
+    async fn subscribers_keep_latest_readiness_without_duplicate_updates() {
+        let availability = FeatureAvailability::default();
+        let shared = availability.clone();
+        let mut updates = shared.subscribe(FeatureId::Battery);
+        let publisher = availability.publisher(FeatureId::Battery);
+        let missing = Availability::Unavailable(UnavailableReason::DeviceMissing);
+
+        publisher.set(missing);
+        updates.changed().await.unwrap();
+        assert_eq!(*updates.borrow_and_update(), missing);
+        publisher.set(missing);
+        assert!(!updates.has_changed().unwrap());
+        publisher.set(Availability::Available);
+        updates.changed().await.unwrap();
+        assert_eq!(*updates.borrow_and_update(), Availability::Available);
+        assert_eq!(
+            *availability.subscribe(FeatureId::Battery).borrow(),
+            Availability::Available
+        );
+        assert_eq!(
+            *availability.subscribe(FeatureId::Network).borrow(),
+            Availability::Checking
+        );
+    }
 }

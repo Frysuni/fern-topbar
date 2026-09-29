@@ -1,5 +1,6 @@
 //! Shared desktop data sources and the combined WM/fullscreen event stream.
 
+pub mod battery;
 mod fullscreen;
 pub mod notifications;
 pub mod reconnect;

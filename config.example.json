@@ -40,6 +40,10 @@
         "mode": "auto"
       },
       {
+        "name": "battery",
+        "mode": "auto"
+      },
+      {
         "name": "notifications",
         "mode": "auto"
       }

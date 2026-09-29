@@ -1,5 +1,6 @@
 pub mod audio;
 pub mod availability;
+pub mod battery;
 pub mod brightness;
 pub mod clock;
 pub mod keyboard_layout;
@@ -14,7 +15,7 @@ pub mod workspaces;
 
 use crate::{
     alerts::AlertPublisher,
-    backend::{self, wm::state::WindowManagerState},
+    backend::{self, battery::BatteryState, wm::state::WindowManagerState},
     ui::{core::PopoverScope, monitor::MonitorSelection},
 };
 
@@ -28,6 +29,7 @@ pub use registry::{EnabledFeature, EnabledFeatures, FeatureDefinition, FeatureId
 pub struct FeatureServices {
     pub availability: availability::FeatureAvailability,
     pub audio: AudioService,
+    pub battery: BatteryState,
     pub alerts: AlertPublisher,
     pub window_manager: WindowManagerState,
     pub wm_commands: Option<tokio::sync::mpsc::UnboundedSender<backend::Command>>,
@@ -38,6 +40,7 @@ pub struct FeatureMountContext {
     pub availability: availability::FeatureAvailability,
     pub popovers: PopoverScope,
     pub audio: AudioService,
+    pub battery: BatteryState,
     /// A mounted producer can own handles independently of notification transport.
     /// Battery currently uses the same publisher at application scope instead.
     #[expect(
@@ -56,6 +59,7 @@ impl FeatureMountContext {
             availability: services.availability.clone(),
             popovers,
             audio: services.audio.clone(),
+            battery: services.battery.clone(),
             alerts: services.alerts.clone(),
             window_manager: services.window_manager.clone(),
             wm_commands: services.wm_commands.clone(),

@@ -2,7 +2,8 @@
 
 use super::{
     FeatureMountContext, FeatureServices, MountedFeature, audio, availability::Availability,
-    brightness, clock, keyboard_layout, microphone, network, notifications, tray, workspaces,
+    battery, brightness, clock, keyboard_layout, microphone, network, notifications, tray,
+    workspaces,
 };
 use crate::config::{FeatureMode, FeatureOptions, Features};
 use serde::Deserialize;
@@ -19,6 +20,7 @@ pub enum FeatureId {
     Brightness,
     Tray,
     Network,
+    Battery,
     Notifications,
 }
 
@@ -87,6 +89,11 @@ const FEATURE_REGISTRY: &[FeatureRegistration] = &[
         id: FeatureId::Network,
         name: "network",
         definition: network::definition,
+    },
+    FeatureRegistration {
+        id: FeatureId::Battery,
+        name: "battery",
+        definition: battery::definition,
     },
     FeatureRegistration {
         id: FeatureId::Notifications,
@@ -223,5 +230,44 @@ mod tests {
         );
         assert_eq!(names(features.center), [FeatureId::Workspaces]);
         assert_eq!(names(features.end), [FeatureId::Audio]);
+    }
+
+    #[test]
+    fn resolution_retains_unavailable_features_in_both_enabled_modes() {
+        let config = Features {
+            start: Vec::new(),
+            center: Vec::new(),
+            end: vec![
+                FeatureOptions {
+                    name: FeatureId::Battery,
+                    mode: FeatureMode::Auto(Auto::Auto),
+                },
+                FeatureOptions {
+                    name: FeatureId::Notifications,
+                    mode: FeatureMode::Switch(true),
+                },
+                FeatureOptions {
+                    name: FeatureId::Network,
+                    mode: FeatureMode::Switch(false),
+                },
+            ],
+        };
+
+        let group = resolve(config).end;
+
+        assert_eq!(
+            group.iter().map(|feature| feature.name).collect::<Vec<_>>(),
+            [FeatureId::Battery, FeatureId::Notifications]
+        );
+
+        let services = FeatureServices::default();
+
+        for feature in group {
+            let missing = Availability::Unavailable(UnavailableReason::ServiceMissing);
+
+            services.availability.publisher(feature.name).set(missing);
+
+            assert_eq!(*(feature.definition.available)(&services).borrow(), missing);
+        }
     }
 }

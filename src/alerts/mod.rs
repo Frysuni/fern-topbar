@@ -1,5 +1,6 @@
 //! Internal topbar warnings, independent of widgets and notification transports.
 
+pub mod battery;
 pub mod service;
 
 use crate::backend::notifications::Urgency;
