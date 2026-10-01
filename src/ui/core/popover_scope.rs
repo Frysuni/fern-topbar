@@ -18,7 +18,7 @@ impl PopupId {
 
         Self(
             NEXT_ID
-                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |id| id.checked_add(1))
+                .try_update(Ordering::Relaxed, Ordering::Relaxed, |id| id.checked_add(1))
                 .expect("popup identifiers exhausted"),
         )
     }
