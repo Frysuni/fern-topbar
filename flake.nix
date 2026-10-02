@@ -1,60 +1,149 @@
 {
-  description = "Fern top-bar flake";
+  description = "Topbar GTK panel with Niri integration";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    crane.url = "github:ipetkov/crane";
 
-    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     {
       nixpkgs,
       flake-utils,
+      crane,
       rust-overlay,
       ...
     }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ rust-overlay.overlays.default ];
-        };
+    flake-utils.lib.eachSystem
+      [
+        "x86_64-linux"
+        "aarch64-linux"
+      ]
+      (
+        system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ (import rust-overlay) ];
+          };
 
-        runtimeLibs = with pkgs; [
-          gtk4
-          libadwaita
-          gtk4-layer-shell
-          libpulseaudio
-          librsvg
-        ];
-      in
-      {
-        devShells.default = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [
-            pkg-config
-          ];
+          rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+            extensions = [
+              "rust-src"
+              "rust-analyzer"
+            ];
+          };
 
-          buildInputs =
-            runtimeLibs
-            ++ (with pkgs; [
-              dart-sass
-            ]);
+          craneLib = (crane.mkLib pkgs).overrideToolchain (_: rustToolchain);
 
-          packages = [
-            (pkgs.rust-bin.stable.latest.default.override {
-              extensions = [
-                "rust-src"
-                "rust-analyzer"
+          src =
+            let
+              root = ./.;
+              assets = ./assets;
+            in
+            pkgs.lib.fileset.toSource {
+              inherit root;
+
+              fileset = pkgs.lib.fileset.unions [
+                (craneLib.fileset.commonCargoSources root)
+                (pkgs.lib.fileset.maybeMissing assets)
+                ./LICENSE
               ];
-            })
-          ];
+            };
 
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath runtimeLibs;
-        };
-      }
-    );
+          commonArgs = {
+            inherit src;
+
+            strictDeps = true;
+
+            nativeBuildInputs = with pkgs; [
+              pkg-config
+              dart-sass
+              wrapGAppsHook4
+            ];
+
+            buildInputs = with pkgs; [
+              gtk4
+              libadwaita
+              gtk4-layer-shell
+              libpulseaudio
+            ];
+          };
+
+          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+
+          topbar = craneLib.buildPackage (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+
+              doCheck = false;
+
+              postInstall = ''
+                install -Dm644 LICENSE "$out/share/licenses/topbar/LICENSE"
+              '';
+
+              meta = {
+                description = "Configurable GTK panel with Niri integration";
+                mainProgram = "topbar";
+                license = pkgs.lib.licenses.gpl3Plus;
+                platforms = [
+                  "x86_64-linux"
+                  "aarch64-linux"
+                ];
+              };
+            }
+          );
+        in
+        {
+          packages.default = topbar;
+
+          apps.default =
+            flake-utils.lib.mkApp {
+              drv = topbar;
+            }
+            // {
+              inherit (topbar) meta;
+            };
+
+          checks = {
+            package = topbar;
+
+            formatting = craneLib.cargoFmt {
+              inherit src;
+            };
+
+            clippy = craneLib.cargoClippy (
+              commonArgs
+              // {
+                inherit cargoArtifacts;
+
+                cargoClippyExtraArgs = "--all-targets -- -D warnings";
+              }
+            );
+
+            # GTK tests need a graphical session; sandbox checks only compile them.
+            test-build = craneLib.cargoTest (
+              commonArgs
+              // {
+                inherit cargoArtifacts;
+
+                cargoTestExtraArgs = "--no-run";
+              }
+            );
+          };
+
+          formatter = pkgs.nixfmt;
+
+          devShells.default = craneLib.devShell {
+            inputsFrom = [ topbar ];
+          };
+        }
+      );
 }
