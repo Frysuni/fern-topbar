@@ -1,4 +1,7 @@
-use super::{Command, DeviceInfo, Password, Security, Snapshot, WifiNetwork, WifiProfile};
+use super::{
+    Command, ConnectionKind, DeviceInfo, DeviceState, Password, Security, Snapshot, WifiNetwork,
+    WifiProfile,
+};
 use futures_util::{
     StreamExt,
     stream::{BoxStream, select_all},
@@ -16,6 +19,45 @@ type Settings = HashMap<String, HashMap<String, OwnedValue>>;
 
 pub const SERVICE: &str = "org.freedesktop.NetworkManager";
 const ROOT: &str = "/org/freedesktop/NetworkManager";
+
+fn connection_kind(kind: &str) -> Option<ConnectionKind> {
+    match kind {
+        "" => None,
+        "802-11-wireless" => Some(ConnectionKind::Wifi),
+        "802-3-ethernet" => Some(ConnectionKind::Ethernet),
+        _ => Some(ConnectionKind::Other),
+    }
+}
+
+fn device_state(state: u32) -> DeviceState {
+    match state {
+        10 => DeviceState::Unknown,
+        20 | 30 => DeviceState::Disconnected,
+        // NetworkManager's preparation, authentication and IP setup phases
+        // describe one ongoing connection attempt for consumers of the backend.
+        40 | 50 | 60 | 70 | 80 | 90 => DeviceState::Connecting,
+        100 => DeviceState::Connected,
+        110 => DeviceState::Disconnecting,
+        120 => DeviceState::Failed,
+        _ => DeviceState::Unknown,
+    }
+}
+
+fn security_from_flags(flags: u32, security: u32) -> Security {
+    if security & (0x200 | 0x2000) != 0 {
+        Security::Unsupported
+    } else if security & 0x100 != 0 {
+        Security::Psk
+    } else if security & 0x400 != 0 {
+        Security::Sae
+    } else if security & (0x800 | 0x1000) != 0 {
+        Security::Owe
+    } else if flags & 1 != 0 || security != 0 {
+        Security::Unsupported
+    } else {
+        Security::Open
+    }
+}
 
 pub struct Client {
     connection: Connection,
@@ -86,7 +128,7 @@ impl Client {
         let mut snapshot = Snapshot {
             wifi_enabled: self.manager.wireless_enabled().await?,
             wifi_hardware_enabled: self.manager.wireless_hardware_enabled().await?,
-            connection_kind: self.manager.primary_connection_type().await?,
+            connection_kind: connection_kind(&self.manager.primary_connection_type().await?),
             ..Snapshot::default()
         };
 
@@ -146,7 +188,7 @@ impl Client {
 
             first.get_or_insert(path);
 
-            let active = device.state().await? == 100;
+            let active = device_state(device.state().await?) == DeviceState::Connected;
 
             connected |= active;
             device.set_autoconnect(enabled).await?;
@@ -206,11 +248,13 @@ impl Client {
             return Ok(());
         }
 
+        let state = device_state(device.state().await?);
+
         match kind {
             1 => {
                 snapshot.wired_available = true;
                 snapshot.wired_enabled |= device.autoconnect().await?;
-                snapshot.wired_connected |= device.state().await? == 100;
+                snapshot.wired_connected |= state == DeviceState::Connected;
             }
             2 => snapshot.wifi_available = true,
             _ => {}
@@ -220,7 +264,7 @@ impl Client {
             path: path.to_string(),
             interface: device.interface().await?,
             wireless: kind == 2,
-            state: device.state().await?,
+            state,
             addresses: self.read_addresses(&device).await?,
         });
 
@@ -318,7 +362,7 @@ impl Client {
             return Ok(None);
         }
 
-        let security = Security::from_flags(
+        let security = security_from_flags(
             ap.flags().await?,
             ap.wpa_flags().await? | ap.rsn_flags().await?,
         );
@@ -754,6 +798,29 @@ mod tests {
     const PROFILE: &str = "/org/freedesktop/NetworkManager/Settings/1";
     const ACTIVE: &str = "/org/freedesktop/NetworkManager/ActiveConnection/1";
 
+    #[test]
+    fn security_never_downgrades_unknown_encryption() {
+        assert_eq!(security_from_flags(1, 0), Security::Unsupported);
+        assert_eq!(security_from_flags(0, 0x200), Security::Unsupported);
+        assert_eq!(security_from_flags(1, 0x100), Security::Psk);
+        assert_eq!(security_from_flags(1, 0x400), Security::Sae);
+        assert_eq!(security_from_flags(0, 0), Security::Open);
+    }
+
+    #[test]
+    fn unknown_protocol_values_do_not_imply_a_connection() {
+        assert_eq!(connection_kind(""), None);
+        assert_eq!(connection_kind("vpn"), Some(ConnectionKind::Other));
+
+        for state in [20, 30] {
+            assert_eq!(device_state(state), DeviceState::Disconnected);
+        }
+
+        for state in [0, 10, 41, 99, 101, u32::MAX] {
+            assert_eq!(device_state(state), DeviceState::Unknown);
+        }
+    }
+
     #[derive(Default)]
     struct Calls {
         wifi_enabled: bool,
@@ -1147,6 +1214,8 @@ mod tests {
         let client = Client::new(client).await.unwrap();
         let mut snapshot = client.snapshot().await.unwrap();
 
+        assert_eq!(snapshot.connection_kind, Some(ConnectionKind::Wifi));
+        assert_eq!(snapshot.devices[0].state, DeviceState::Connected);
         assert_eq!(snapshot.networks.len(), 1);
         assert!(snapshot.networks[0].active);
         assert_eq!(snapshot.networks[0].profile.as_deref(), Some(PROFILE));

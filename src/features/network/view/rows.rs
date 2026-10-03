@@ -1,4 +1,4 @@
-use super::super::backend::{DeviceInfo, Security, WifiNetwork, WifiProfile};
+use super::super::backend::{DeviceInfo, DeviceState, Security, WifiNetwork, WifiProfile};
 use super::{Input, Network, View, templates::DetailRow};
 use crate::ui::{
     core::{Button, motion},
@@ -110,11 +110,12 @@ pub struct RowData {
 impl RowData {
     fn device(device: &DeviceInfo, busy: bool) -> Self {
         let state = match device.state {
-            100 => "Connected",
-            40..=90 => "Connecting",
-            110 => "Disconnecting",
-            120 => "Failed",
-            _ => "Disconnected",
+            DeviceState::Connected => "Connected",
+            DeviceState::Connecting => "Connecting",
+            DeviceState::Disconnecting => "Disconnecting",
+            DeviceState::Failed => "Failed",
+            DeviceState::Disconnected => "Disconnected",
+            DeviceState::Unknown => "Unknown",
         };
 
         let mut details = vec![state.to_string()];
@@ -129,11 +130,13 @@ impl RowData {
             } else {
                 icon_names::NETWORK_WIRED
             },
-            active: device.state == 100,
+            active: device.state == DeviceState::Connected,
             enabled: !busy,
-            primary: (40..=110)
-                .contains(&device.state)
-                .then(|| ("Disconnect", Input::Disconnect(device.path.clone()))),
+            primary: matches!(
+                device.state,
+                DeviceState::Connecting | DeviceState::Connected | DeviceState::Disconnecting
+            )
+            .then(|| ("Disconnect", Input::Disconnect(device.path.clone()))),
             secondary: None,
         }
     }
@@ -296,6 +299,49 @@ impl FactoryComponent for NetworkRow {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_ongoing_connections_offer_a_disconnect_action() {
+        let mut device = DeviceInfo {
+            path: "/wifi".into(),
+            interface: "wlan0".into(),
+            wireless: true,
+            state: DeviceState::Disconnected,
+            addresses: Vec::new(),
+        };
+
+        for state in [
+            DeviceState::Connecting,
+            DeviceState::Connected,
+            DeviceState::Disconnecting,
+        ] {
+            device.state = state;
+            let row = RowData::device(&device, false);
+
+            assert!(matches!(
+                row.primary,
+                Some(("Disconnect", Input::Disconnect(path))) if path == device.path
+            ));
+            assert_eq!(row.active, state == DeviceState::Connected);
+            assert!(!RowData::device(&device, true).enabled);
+        }
+
+        for state in [
+            DeviceState::Unknown,
+            DeviceState::Disconnected,
+            DeviceState::Failed,
+        ] {
+            device.state = state;
+            let row = RowData::device(&device, false);
+
+            assert!(row.primary.is_none());
+            assert!(!row.active);
+
+            if state == DeviceState::Unknown {
+                assert_eq!(row.subtitle, "Unknown");
+            }
+        }
+    }
 
     #[test]
     fn connected_networks_disconnect_without_removing_the_saved_profile() {

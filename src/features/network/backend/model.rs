@@ -8,11 +8,28 @@ pub struct Snapshot {
     pub wired_connected: bool,
     pub wired_enabled: bool,
     pub wired_available: bool,
-    pub connection_kind: String,
+    pub connection_kind: Option<ConnectionKind>,
     pub connection_name: String,
     pub networks: Vec<WifiNetwork>,
     pub profiles: Vec<WifiProfile>,
     pub devices: Vec<DeviceInfo>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ConnectionKind {
+    Wifi,
+    Ethernet,
+    Other,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DeviceState {
+    Connected,
+    Connecting,
+    Disconnected,
+    Disconnecting,
+    Failed,
+    Unknown,
 }
 
 #[derive(Clone)]
@@ -54,22 +71,6 @@ impl Security {
     pub fn needs_password(self) -> bool {
         matches!(self, Self::Psk | Self::Sae)
     }
-
-    pub fn from_flags(flags: u32, security: u32) -> Self {
-        if security & (0x200 | 0x2000) != 0 {
-            Self::Unsupported
-        } else if security & 0x100 != 0 {
-            Self::Psk
-        } else if security & 0x400 != 0 {
-            Self::Sae
-        } else if security & (0x800 | 0x1000) != 0 {
-            Self::Owe
-        } else if flags & 1 != 0 || security != 0 {
-            Self::Unsupported
-        } else {
-            Self::Open
-        }
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -97,7 +98,7 @@ pub struct DeviceInfo {
     pub path: String,
     pub interface: String,
     pub wireless: bool,
-    pub state: u32,
+    pub state: DeviceState,
     pub addresses: Vec<String>,
 }
 
@@ -147,15 +148,6 @@ mod tests {
             active: false,
             profile: None,
         }
-    }
-
-    #[test]
-    fn security_never_downgrades_unknown_encryption() {
-        assert_eq!(Security::from_flags(1, 0), Security::Unsupported);
-        assert_eq!(Security::from_flags(0, 0x200), Security::Unsupported);
-        assert_eq!(Security::from_flags(1, 0x100), Security::Psk);
-        assert_eq!(Security::from_flags(1, 0x400), Security::Sae);
-        assert_eq!(Security::from_flags(0, 0), Security::Open);
     }
 
     #[test]

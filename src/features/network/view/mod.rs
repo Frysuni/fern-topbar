@@ -3,7 +3,6 @@ mod status;
 mod templates;
 
 pub use status::View;
-use status::status_view;
 
 use super::backend::{Backend, Event, Password, WifiNetwork};
 use crate::ui::{
@@ -513,7 +512,7 @@ impl Network {
                 let busy = self.status.busy || self.backend.is_busy();
                 let error = self.status.error.take();
 
-                self.status = status_view(snapshot, error, true);
+                self.status = View::from_status(snapshot, error, true);
                 self.status.busy = busy;
             }
             Event::Error(message) => self.status.error = Some(message),
@@ -580,8 +579,7 @@ impl Network {
 #[cfg(test)]
 mod tests {
     use super::super::backend::{Backend, Command, Event, Security, Snapshot};
-    use super::super::backend::{DeviceInfo, WifiProfile};
-    use super::status::status_view;
+    use super::super::backend::{DeviceInfo, DeviceState, WifiProfile};
     use super::*;
 
     fn settle() {
@@ -606,7 +604,7 @@ mod tests {
             security: Security::Psk,
         };
 
-        let status = status_view(
+        let status = View::from_status(
             Snapshot {
                 profiles: vec![profile],
                 wifi_enabled: true,
@@ -753,14 +751,14 @@ mod tests {
                     path: "/wifi".into(),
                     interface: "wlan0".into(),
                     wireless: true,
-                    state: 100,
+                    state: DeviceState::Connected,
                     addresses: vec!["192.168.1.20/24".into()],
                 },
                 DeviceInfo {
                     path: "/ethernet".into(),
                     interface: "enp4s0".into(),
                     wireless: false,
-                    state: 100,
+                    state: DeviceState::Connected,
                     addresses: vec![
                         "192.168.1.21/24".into(),
                         "2001:db8:1234:5678:90ab:cdef:1234:5678/64".into(),
@@ -773,7 +771,7 @@ mod tests {
         let component = Network::builder()
             .launch(NetworkInit {
                 popovers: PopoverScope::default(),
-                status: status_view(snapshot, None, true),
+                status: View::from_status(snapshot, None, true),
                 backend,
             })
             .detach();
@@ -937,7 +935,7 @@ mod tests {
         let component = Network::builder()
             .launch(NetworkInit {
                 popovers: PopoverScope::default(),
-                status: status_view(Snapshot::default(), None, true),
+                status: View::from_status(Snapshot::default(), None, true),
                 backend,
             })
             .detach();

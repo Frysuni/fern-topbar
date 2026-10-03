@@ -3,7 +3,10 @@ use crate::features::availability::{self, Availability, AvailabilityPublisher, U
 mod dbus;
 mod model;
 
-pub use model::{DeviceInfo, Event, Password, Security, Snapshot, WifiNetwork, WifiProfile};
+pub use model::{
+    ConnectionKind, DeviceInfo, DeviceState, Event, Password, Security, Snapshot, WifiNetwork,
+    WifiProfile,
+};
 
 use crate::{
     dbus::{ServiceChanges, system},

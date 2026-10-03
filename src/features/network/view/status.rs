@@ -1,4 +1,4 @@
-use super::super::backend::{DeviceInfo, Snapshot, WifiNetwork, WifiProfile};
+use super::super::backend::{ConnectionKind, DeviceInfo, Snapshot, WifiNetwork, WifiProfile};
 use crate::ui::icon_names;
 
 #[derive(Clone, Debug)]
@@ -64,46 +64,75 @@ impl View {
     pub fn wifi_sensitive(&self) -> bool {
         !self.busy && self.wifi_available && self.wifi_hardware_enabled
     }
+
+    pub fn from_status(status: Snapshot, error: Option<String>, visible: bool) -> Self {
+        let wifi_enabled =
+            status.wifi_enabled && status.wifi_available && status.wifi_hardware_enabled;
+        let (icon, label) = match status.connection_kind {
+            Some(ConnectionKind::Wifi) if wifi_enabled => (icon_names::NETWORK_WIFI, "Wi-Fi"),
+            _ if status.wired_connected => (icon_names::NETWORK_WIRED, "Ethernet"),
+            _ if status.wired_enabled => (icon_names::NETWORK_WIRED, "Connecting"),
+            _ if wifi_enabled => (icon_names::NETWORK_WIFI, "Connecting"),
+            _ => (icon_names::NETWORK_OFF, "Offline"),
+        };
+
+        let tooltip = if status.connection_name.is_empty() {
+            label.to_string()
+        } else {
+            format!("Connected: {}", status.connection_name)
+        };
+
+        Self {
+            visible,
+            icon,
+            summary: label.into(),
+            tooltip,
+            wifi_enabled,
+            wifi_available: status.wifi_available,
+            wifi_hardware_enabled: status.wifi_hardware_enabled,
+            wired_enabled: status.wired_enabled,
+            wired_connected: status.wired_connected,
+            wired_available: status.wired_available,
+            error,
+            busy: false,
+            networks: status.networks,
+            profiles: status.profiles,
+            devices: status.devices,
+        }
+    }
 }
 
 impl Default for View {
     fn default() -> Self {
-        status_view(Snapshot::default(), None, false)
+        Self::from_status(Snapshot::default(), None, false)
     }
 }
 
-pub fn status_view(status: Snapshot, error: Option<String>, visible: bool) -> View {
-    let wifi_enabled = status.wifi_enabled && status.wifi_available && status.wifi_hardware_enabled;
-    let (icon, label) = match status.connection_kind.as_str() {
-        "802-11-wireless" if wifi_enabled => (icon_names::NETWORK_WIFI, "Wi-Fi"),
-        "802-3-ethernet" if status.wired_connected => (icon_names::NETWORK_WIRED, "Ethernet"),
-        _ if status.wired_connected => (icon_names::NETWORK_WIRED, "Ethernet"),
-        _ if status.wired_enabled => (icon_names::NETWORK_WIRED, "Ethernet on"),
-        _ if wifi_enabled => (icon_names::NETWORK_WIFI, "Wi-Fi on"),
-        _ => (icon_names::NETWORK_OFF, "Offline"),
-    };
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let tooltip = if status.connection_name.is_empty() {
-        label.to_string()
-    } else {
-        format!("Connected: {}", status.connection_name)
-    };
+    #[test]
+    fn primary_wifi_takes_precedence_unless_the_adapter_is_blocked() {
+        let mut snapshot = Snapshot {
+            wifi_enabled: true,
+            wifi_available: true,
+            wifi_hardware_enabled: true,
+            wired_connected: true,
+            connection_kind: Some(ConnectionKind::Wifi),
+            ..Snapshot::default()
+        };
 
-    View {
-        visible,
-        icon,
-        summary: label.into(),
-        tooltip,
-        wifi_enabled,
-        wifi_available: status.wifi_available,
-        wifi_hardware_enabled: status.wifi_hardware_enabled,
-        wired_enabled: status.wired_enabled,
-        wired_connected: status.wired_connected,
-        wired_available: status.wired_available,
-        error,
-        busy: false,
-        networks: status.networks,
-        profiles: status.profiles,
-        devices: status.devices,
+        let view = View::from_status(snapshot.clone(), None, true);
+
+        assert_eq!(view.icon, icon_names::NETWORK_WIFI);
+        assert_eq!(view.summary, "Wi-Fi");
+
+        snapshot.wifi_hardware_enabled = false;
+        let view = View::from_status(snapshot, None, true);
+
+        assert_eq!(view.icon, icon_names::NETWORK_WIRED);
+        assert_eq!(view.summary, "Ethernet");
+        assert!(!view.wifi_enabled);
     }
 }
