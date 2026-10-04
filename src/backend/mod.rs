@@ -18,7 +18,7 @@ pub use wm::{Command, Workspace};
 pub enum Event {
     OverviewOpened(Option<String>),
     OverviewClosed,
-    KeyboardLayoutChanged(Option<String>),
+    KeyboardLayoutChanged(Option<wm::KeyboardLayouts>),
     WorkspacesChanged(Vec<Workspace>),
     FocusedFullscreenOutputsChanged(HashSet<String>),
 }

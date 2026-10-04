@@ -1,11 +1,26 @@
 @use "sass:map";
 @use "../variables" as *;
-@use "../base" as *;
 
-.topbar-layout {
-    @include panel-text;
-    color: map.get($colors, bar-text);
-    background: transparent;
+button.topbar-layout-choice {
+    min-height: 30px;
+    padding: 4px 10px;
+    border: 0;
     border-radius: map.get($radii, control);
-    padding: 4px 7px;
+    box-shadow: none;
+    // Hidden updates must be settled before the next opening.
+    transition: none;
+    background: transparent;
+    color: map.get($colors, bar-text);
+
+    &:hover {
+        background: map.get($colors, bar-hover);
+    }
+
+    &.selected, &:active {
+        background: map.get($colors, bar-pressed);
+    }
+}
+
+.layout-menu-mapped button.topbar-layout-choice {
+    transition: background-color 40ms ease;
 }

@@ -18,6 +18,12 @@ to display the current percentage next to the panel icon:
 It defaults to `false` when omitted. Muting sound keeps the configured volume
 percentage visible; the icon indicates mute status.
 
+Click `keyboard_layout` to choose from the layouts configured in Niri. The menu
+marks the active layout and follows changes made with keyboard shortcuts or
+Niri configuration reloads. After selection, it shows the confirmed layout with
+a short highlight animation and closes automatically. No additional Topbar
+configuration is required.
+
 Choose another file with either spelling:
 
 ```sh

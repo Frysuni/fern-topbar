@@ -28,14 +28,20 @@ impl Mounted {
 fn mount(context: FeatureMountContext) -> MountedFeature {
     let mut updates = context.window_manager.subscribe_keyboard_layout();
     let initial = updates.borrow_and_update().clone();
-    let component = view::KeyboardLayout::builder().launch(initial).detach();
+    let component = view::KeyboardLayout::builder()
+        .launch(view::KeyboardLayoutInit {
+            layouts: initial,
+            popovers: context.popovers,
+            wm_commands: context.wm_commands,
+        })
+        .detach();
 
     let input = component.sender().clone();
     let forwarder = Task::spawn(async move {
         while updates.changed().await.is_ok() {
             let layout = updates.borrow_and_update().clone();
 
-            if input.send(layout).is_err() {
+            if input.send(view::Input::LayoutsChanged(layout)).is_err() {
                 break;
             }
         }
@@ -60,7 +66,10 @@ mod tests {
 
         services
             .window_manager
-            .set_keyboard_layout(Some("English".into()));
+            .set_keyboard_layout(Some(crate::backend::wm::KeyboardLayouts {
+                names: vec!["English".into()],
+                current_idx: 0,
+            }));
 
         let mount = || {
             let context = FeatureMountContext::new(&services, PopoverScope::default());
@@ -74,7 +83,7 @@ mod tests {
         let mounted = mount();
         let label = mounted.controller.widget();
 
-        assert_eq!(label.label(), "English");
+        assert_eq!(label.label().as_deref(), Some("English"));
         assert!(label.get_visible());
 
         services.window_manager.set_keyboard_layout(None);
@@ -91,15 +100,21 @@ mod tests {
             std::thread::sleep(Duration::from_millis(1));
         }
 
-        assert_eq!(label.label(), "");
+        assert_eq!(label.label().as_deref(), Some(""));
         drop(mounted);
         services
             .window_manager
-            .set_keyboard_layout(Some("Russian".into()));
+            .set_keyboard_layout(Some(crate::backend::wm::KeyboardLayouts {
+                names: vec!["Russian".into()],
+                current_idx: 0,
+            }));
 
         let remounted = mount();
 
-        assert_eq!(remounted.controller.widget().label(), "Russian");
+        assert_eq!(
+            remounted.controller.widget().label().as_deref(),
+            Some("Russian")
+        );
         assert!(remounted.controller.widget().get_visible());
     }
 }

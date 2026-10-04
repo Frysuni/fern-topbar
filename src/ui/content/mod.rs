@@ -261,7 +261,10 @@ mod tests {
 
         services
             .window_manager
-            .set_keyboard_layout(Some("English".into()));
+            .set_keyboard_layout(Some(crate::backend::wm::KeyboardLayouts {
+                names: vec!["English".into()],
+                current_idx: 0,
+            }));
 
         let content = PanelContent::builder()
             .launch(PanelContentInit {

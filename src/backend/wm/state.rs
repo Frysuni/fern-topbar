@@ -1,6 +1,6 @@
 //! Latest WM data, retained independently of mounted feature components.
 
-use super::Workspace;
+use super::{KeyboardLayouts, Workspace};
 use tokio::sync::watch;
 
 /// Shares current workspaces and keyboard layout with existing and late subscribers.
@@ -8,7 +8,7 @@ use tokio::sync::watch;
 #[derive(Clone)]
 pub struct WindowManagerState {
     workspaces: watch::Sender<Vec<Workspace>>,
-    keyboard_layout: watch::Sender<Option<String>>,
+    keyboard_layout: watch::Sender<Option<KeyboardLayouts>>,
 }
 
 impl Default for WindowManagerState {
@@ -25,7 +25,7 @@ impl WindowManagerState {
         self.workspaces.subscribe()
     }
 
-    pub fn subscribe_keyboard_layout(&self) -> watch::Receiver<Option<String>> {
+    pub fn subscribe_keyboard_layout(&self) -> watch::Receiver<Option<KeyboardLayouts>> {
         self.keyboard_layout.subscribe()
     }
 
@@ -41,7 +41,7 @@ impl WindowManagerState {
         });
     }
 
-    pub fn set_keyboard_layout(&self, layout: Option<String>) {
+    pub fn set_keyboard_layout(&self, layout: Option<KeyboardLayouts>) {
         self.keyboard_layout.send_if_modified(|current| {
             if *current == layout {
                 return false;
@@ -73,7 +73,10 @@ mod tests {
 
         // Initialization can finish before any feature is mounted.
         state.set_workspaces(workspaces.clone());
-        state.set_keyboard_layout(Some("English (US)".into()));
+        state.set_keyboard_layout(Some(KeyboardLayouts {
+            names: vec!["English (US)".into()],
+            current_idx: 0,
+        }));
 
         let mut first = state.subscribe_workspaces();
         let mut second = shared.subscribe_workspaces();
@@ -82,12 +85,18 @@ mod tests {
         assert_eq!(*first.borrow_and_update(), workspaces);
         assert_eq!(*second.borrow_and_update(), workspaces);
         assert_eq!(
-            keyboard.borrow_and_update().as_deref(),
+            keyboard
+                .borrow_and_update()
+                .as_ref()
+                .and_then(KeyboardLayouts::current_name),
             Some("English (US)")
         );
 
         shared.set_workspaces(workspaces);
-        shared.set_keyboard_layout(Some("English (US)".into()));
+        shared.set_keyboard_layout(Some(KeyboardLayouts {
+            names: vec!["English (US)".into()],
+            current_idx: 0,
+        }));
 
         assert!(!first.has_changed().unwrap());
         assert!(!second.has_changed().unwrap());

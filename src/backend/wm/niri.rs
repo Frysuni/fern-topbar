@@ -1,4 +1,4 @@
-use super::{Command, Workspace};
+use super::{Command, KeyboardLayouts, Workspace};
 use crate::backend::{Event as BackendEvent, reconnect::ReconnectBackoff};
 use crate::features::{
     FeatureId,
@@ -96,6 +96,9 @@ impl CommandWriter {
                 reference: WorkspaceReferenceArg::Id(id),
             },
             Command::CloseOverview => Action::CloseOverview {},
+            Command::SwitchKeyboardLayout(index) => Action::SwitchLayout {
+                layout: niri_ipc::LayoutSwitchTarget::Index(index),
+            },
         });
 
         let reusing_connection = self.stream.is_some();
@@ -426,7 +429,12 @@ impl StreamState {
     }
 
     fn keyboard_layout_changed(&self, index: u8) -> BackendEvent {
-        BackendEvent::KeyboardLayoutChanged(self.keyboard_layouts.get(usize::from(index)).cloned())
+        BackendEvent::KeyboardLayoutChanged(self.keyboard_layouts.get(usize::from(index)).map(
+            |_| KeyboardLayouts {
+                names: self.keyboard_layouts.clone(),
+                current_idx: index,
+            },
+        ))
     }
 }
 

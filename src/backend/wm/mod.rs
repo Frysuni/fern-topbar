@@ -15,7 +15,22 @@ pub struct Workspace {
     pub urgent: bool,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct KeyboardLayouts {
+    pub names: Vec<String>,
+    pub current_idx: u8,
+}
+
+impl KeyboardLayouts {
+    pub fn current_name(&self) -> Option<&str> {
+        self.names
+            .get(usize::from(self.current_idx))
+            .map(String::as_str)
+    }
+}
+
 pub enum Command {
+    SwitchKeyboardLayout(u8),
     FocusWorkspace(u64),
     CloseOverview,
 }
