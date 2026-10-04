@@ -9,7 +9,9 @@ use relm4::factory::{DynamicIndex, FactoryComponent, FactorySender, FactoryVecDe
 use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 
-const TRAY_ICON_SIZE: i32 = 18;
+// Match $controls.icon-size in assets/_variables.scss. Pixmaps need an explicit
+// pixel size as well as CSS sizing, just like named icons.
+const TRAY_ICON_SIZE: i32 = 16;
 const OVERLAY_ICON_SIZE: i32 = 10;
 
 pub struct TrayItem {

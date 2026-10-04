@@ -20,6 +20,10 @@ $slider: (
         slider {
             min-width: map.get($slider, thumb-size);
             min-height: map.get($slider, thumb-size);
+            // Theme margins assume a larger thumb and can make its measured
+            // size negative after our size and border overrides.
+            margin: -4px;
+            padding: 0;
             border: 0;
             border-radius: map.get($radii, round);
             background: map.get($colors, bar-text);

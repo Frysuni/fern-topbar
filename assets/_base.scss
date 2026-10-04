@@ -1,7 +1,16 @@
 @use "sass:map";
 @use "variables" as *;
 
+// Shared typography for panel controls, independent of the desktop GTK theme.
+@mixin panel-text {
+    font-family: $font-family;
+    font-size: map.get($font-sizes, panel);
+    font-weight: map.get($font-weights, semibold);
+    font-variant-numeric: tabular-nums;
+}
+
 @mixin feature-button {
+    @include panel-text;
     min-width: map.get($controls, compact-height);
     min-height: map.get($controls, compact-height);
     padding: 0;
@@ -100,7 +109,7 @@ window.topbar {
         border: 1px solid map.get($colors, bar-edge);
         border-radius: map.get($radii, surface);
         box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
-        font-family: $font-family;
+        @include panel-text;
     }
 
     &-end {
@@ -141,6 +150,13 @@ menubutton.topbar {
 
 menubutton.topbar-feature-button.muted > button {
     color: map.get($colors, status-danger);
+}
+
+// Optical correction belongs to the trigger image, not the button's hit area.
+// Keep the same scale for every volume level and microphone mute state.
+menubutton.topbar-audio-button > button image,
+menubutton.topbar-microphone-button > button image {
+    -gtk-icon-size: map.get($controls, sound-icon-size);
 }
 
 button.topbar {

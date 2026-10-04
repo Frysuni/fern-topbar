@@ -38,6 +38,7 @@ $spacing: (
 $font-family: "SF Pro Text", "Inter", "Adwaita Sans", sans-serif;
 
 $font-sizes: (
+        panel: 13px,
         menu-title: 14px,
         menu-section: 13px,
         menu-item: 12px,
@@ -57,6 +58,9 @@ $font-weights: (
 $controls: (
         compact-height: 28px,
         icon-size: 16px,
+        // Material sound glyphs have wider internal margins than tray artwork.
+        // 20px yields a ~13–16px visible glyph while keeping mute variants stable.
+        sound-icon-size: 20px,
         popover-padding: 12px,
 );
 
