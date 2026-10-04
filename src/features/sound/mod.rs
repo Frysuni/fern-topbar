@@ -115,6 +115,7 @@ pub(crate) fn mount_control(
 
     let controller = control::VolumeControl::builder()
         .launch(control::VolumeControlInit {
+            show_percent: context.show_percent,
             spec,
             controls,
             popovers: context.popovers,

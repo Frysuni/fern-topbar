@@ -68,7 +68,8 @@ impl Component for PanelContent {
             let mut mounted = Vec::with_capacity(features.len());
 
             for feature in features {
-                let context = FeatureMountContext::new(&services, popovers.clone());
+                let mut context = FeatureMountContext::new(&services, popovers.clone());
+                context.show_percent = feature.show_percent;
 
                 let updates = (feature.definition.available)(&services);
                 let component = (feature.definition.mount)(context);
@@ -145,19 +146,23 @@ mod tests {
                 FeatureOptions {
                     name: FeatureId::KeyboardLayout,
                     mode: FeatureMode::Switch(true),
+                    show_percent: false,
                 },
                 FeatureOptions {
                     name: FeatureId::Network,
                     mode: FeatureMode::Switch(false),
+                    show_percent: false,
                 },
                 FeatureOptions {
                     name: FeatureId::Clock,
                     mode: FeatureMode::Switch(true),
+                    show_percent: false,
                 },
             ],
             center: vec![FeatureOptions {
                 name: FeatureId::Workspaces,
                 mode: FeatureMode::Switch(true),
+                show_percent: false,
             }],
             end: Vec::new(),
         };
@@ -234,14 +239,17 @@ mod tests {
                 FeatureOptions {
                     name: FeatureId::Clock,
                     mode: FeatureMode::Switch(true),
+                    show_percent: false,
                 },
                 FeatureOptions {
                     name: FeatureId::KeyboardLayout,
                     mode: FeatureMode::Auto(Auto::Auto),
+                    show_percent: false,
                 },
                 FeatureOptions {
                     name: FeatureId::Workspaces,
                     mode: FeatureMode::Switch(true),
+                    show_percent: false,
                 },
             ],
             center: Vec::new(),

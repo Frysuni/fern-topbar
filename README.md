@@ -8,6 +8,16 @@ Copy `config.example.json` to `~/.config/topbar/config.json` and edit it.
 The file uses JSON (no comments or trailing commas). All supported options and
 widgets are included in the example.
 
+For `audio`, `microphone`, and `brightness`, set `show_percent` independently
+to display the current percentage next to the panel icon:
+
+```json
+{ "name": "audio", "mode": true, "show_percent": true }
+```
+
+It defaults to `false` when omitted. Muting sound keeps the configured volume
+percentage visible; the icon indicates mute status.
+
 Choose another file with either spelling:
 
 ```sh

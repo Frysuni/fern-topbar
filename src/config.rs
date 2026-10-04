@@ -41,6 +41,8 @@ pub struct Features {
 pub struct FeatureOptions {
     pub name: FeatureId,
     pub mode: FeatureMode,
+    #[serde(default)]
+    pub show_percent: bool,
 }
 
 impl Features {
@@ -48,6 +50,17 @@ impl Features {
         let mut seen = HashSet::new();
 
         for feature in self.start.iter().chain(&self.center).chain(&self.end) {
+            if feature.show_percent
+                && !matches!(
+                    feature.name,
+                    FeatureId::Audio | FeatureId::Microphone | FeatureId::Brightness
+                )
+            {
+                return Err(format!(
+                    "feature '{}' does not support show_percent",
+                    feature.name.as_str()
+                ));
+            }
             if !seen.insert(feature.name) {
                 return Err(format!(
                     "feature '{}' occurs more than once in features",
@@ -116,7 +129,11 @@ impl Default for Features {
     fn default() -> Self {
         let enabled = FeatureMode::Switch(true);
         let auto = FeatureMode::Auto(Auto::Auto);
-        let option = |name, mode| FeatureOptions { name, mode };
+        let option = |name, mode| FeatureOptions {
+            name,
+            mode,
+            show_percent: false,
+        };
 
         Self {
             start: vec![option(FeatureId::Workspaces, enabled)],
@@ -240,6 +257,35 @@ mod tests {
     use super::*;
 
     #[test]
+    fn percentage_options_are_optional_and_validated() {
+        for name in ["audio", "microphone", "brightness"] {
+            for show_percent in [false, true] {
+                let json = format!(
+                    r#"{{"features":{{"end":[{{"name":"{name}","mode":true,"show_percent":{show_percent}}}]}}}}"#
+                );
+                let settings =
+                    super::parse(Some(&json), std::path::Path::new("test.json")).unwrap();
+                assert_eq!(settings.features.end[0].show_percent, show_percent);
+                let enabled = crate::features::resolve(settings.features);
+                assert_eq!(enabled.end[0].show_percent, show_percent);
+            }
+        }
+        let old = r#"{"features":{"end":[{"name":"audio","mode":true}]}}"#;
+        assert!(
+            !super::parse(Some(old), std::path::Path::new("test.json"))
+                .unwrap()
+                .features
+                .end[0]
+                .show_percent
+        );
+        for invalid in [
+            r#"{"features":{"end":[{"name":"clock","mode":true,"show_percent":true}]}}"#,
+            r#"{"features":{"end":[{"name":"audio","mode":true,"show_percent":"yes"}]}}"#,
+        ] {
+            assert!(super::parse(Some(invalid), std::path::Path::new("test.json")).is_err());
+        }
+    }
+    #[test]
     fn explicit_feature_groups_can_be_empty() {
         let config = Config {
             features: Features {
@@ -262,11 +308,13 @@ mod tests {
         let enabled = FeatureOptions {
             name: FeatureId::Clock,
             mode: FeatureMode::Switch(true),
+            show_percent: false,
         };
 
         let disabled = FeatureOptions {
             name: FeatureId::Clock,
             mode: FeatureMode::Switch(false),
+            show_percent: false,
         };
 
         for features in [

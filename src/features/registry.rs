@@ -118,6 +118,7 @@ pub struct FeatureDefinition {
 pub struct EnabledFeature {
     pub name: FeatureId,
     pub mode: FeatureMode,
+    pub show_percent: bool,
     pub definition: FeatureDefinition,
 }
 
@@ -150,6 +151,7 @@ fn resolve_feature(options: FeatureOptions) -> Option<EnabledFeature> {
     Some(EnabledFeature {
         name: options.name,
         mode: options.mode,
+        show_percent: options.show_percent,
         definition,
     })
 }
@@ -165,6 +167,7 @@ mod tests {
 
         for name in FeatureId::all() {
             let feature = resolve_feature(FeatureOptions {
+                show_percent: false,
                 name,
                 mode: FeatureMode::Switch(true),
             })
@@ -190,28 +193,34 @@ mod tests {
                 FeatureOptions {
                     name: FeatureId::KeyboardLayout,
                     mode: FeatureMode::Switch(true),
+                    show_percent: false,
                 },
                 FeatureOptions {
                     name: FeatureId::Network,
                     mode: FeatureMode::Switch(false),
+                    show_percent: false,
                 },
                 FeatureOptions {
                     name: FeatureId::Clock,
                     mode: FeatureMode::Auto(Auto::Auto),
+                    show_percent: false,
                 },
             ],
             center: vec![FeatureOptions {
                 name: FeatureId::Workspaces,
                 mode: FeatureMode::Switch(true),
+                show_percent: false,
             }],
             end: vec![
                 FeatureOptions {
                     name: FeatureId::Audio,
                     mode: FeatureMode::Switch(true),
+                    show_percent: false,
                 },
                 FeatureOptions {
                     name: FeatureId::Microphone,
                     mode: FeatureMode::Switch(false),
+                    show_percent: false,
                 },
             ],
         };
@@ -241,14 +250,17 @@ mod tests {
                 FeatureOptions {
                     name: FeatureId::Battery,
                     mode: FeatureMode::Auto(Auto::Auto),
+                    show_percent: false,
                 },
                 FeatureOptions {
                     name: FeatureId::Notifications,
                     mode: FeatureMode::Switch(true),
+                    show_percent: false,
                 },
                 FeatureOptions {
                     name: FeatureId::Network,
                     mode: FeatureMode::Switch(false),
+                    show_percent: false,
                 },
             ],
         };

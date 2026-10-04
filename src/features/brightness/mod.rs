@@ -35,6 +35,7 @@ fn mount(context: FeatureMountContext) -> MountedFeature {
     let mut receiver = backend.take_events();
     let controller = view::Brightness::builder()
         .launch(view::BrightnessInit {
+            show_percent: context.show_percent,
             commands,
             popovers: context.popovers,
         })

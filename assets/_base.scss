@@ -146,6 +146,11 @@ menubutton.topbar {
     &-labeled-button > button {
         padding: 0 map.get($spacing, 5);
     }
+
+    // Short icon-and-percentage readouts need less inset than text buttons.
+    &-percent-button > button {
+        padding: 0 map.get($spacing, 2);
+    }
 }
 
 menubutton.topbar-feature-button.muted > button {

@@ -11,12 +11,14 @@ use relm4::gtk::prelude::*;
 use relm4::prelude::*;
 
 pub struct Brightness {
+    show_percent: bool,
     _popup: Option<PopupRegistration>,
     value: Option<backend::Brightness>,
     commands: backend::Controls,
 }
 
 pub struct BrightnessInit {
+    pub show_percent: bool,
     pub popovers: PopoverScope,
     pub commands: backend::Controls,
 }
@@ -41,7 +43,17 @@ impl Component for Brightness {
         PanelMenuButton(MenuButtonStyle::Icon) {
             #[watch]
             set_visible: model.value.is_some(),
-            set_icon_name: icon_names::BRIGHTNESS,
+            set_class_active: ("topbar-percent-button", model.show_percent),
+            #[wrap(Some)]
+            set_child = &gtk::Box {
+                set_spacing: 4,
+                gtk::Image { set_icon_name: Some(icon_names::BRIGHTNESS) },
+                gtk::Label {
+                    set_visible: model.show_percent,
+                    #[watch]
+                    set_label: &model.value.as_ref().map_or(String::new(), |value| format!("{}%", value.percent)),
+                },
+            },
             set_tooltip_text: Some("Brightness · scroll to adjust"),
             add_controller = gtk::EventControllerScroll::new(gtk::EventControllerScrollFlags::VERTICAL) {
                 connect_scroll[sender] => move |_, _, dy| {
@@ -83,8 +95,13 @@ impl Component for Brightness {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let BrightnessInit { commands, popovers } = init;
+        let BrightnessInit {
+            commands,
+            popovers,
+            show_percent,
+        } = init;
         let mut model = Self {
+            show_percent,
             _popup: None,
             value: None,
             commands,

@@ -17,11 +17,13 @@
     "end": [
       {
         "name": "audio",
-        "mode": true
+        "mode": true,
+        "show_percent": false
       },
       {
         "name": "microphone",
-        "mode": true
+        "mode": true,
+        "show_percent": false
       },
       {
         "name": "keyboard_layout",
@@ -29,7 +31,8 @@
       },
       {
         "name": "brightness",
-        "mode": "auto"
+        "mode": "auto",
+        "show_percent": false
       },
       {
         "name": "tray",

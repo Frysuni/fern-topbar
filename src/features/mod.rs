@@ -37,6 +37,7 @@ pub struct FeatureServices {
 }
 
 pub struct FeatureMountContext {
+    pub show_percent: bool,
     pub availability: availability::FeatureAvailability,
     pub popovers: PopoverScope,
     pub audio: AudioService,
@@ -56,6 +57,7 @@ pub struct FeatureMountContext {
 impl FeatureMountContext {
     pub fn new(services: &FeatureServices, popovers: PopoverScope) -> Self {
         Self {
+            show_percent: false,
             availability: services.availability.clone(),
             popovers,
             audio: services.audio.clone(),

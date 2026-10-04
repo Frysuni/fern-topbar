@@ -23,6 +23,7 @@ impl Sound {
 }
 
 pub struct VolumeControl {
+    show_percent: bool,
     _popup: Option<PopupRegistration>,
     spec: VolumeControlOptions,
     sound: Option<Sound>,
@@ -31,6 +32,7 @@ pub struct VolumeControl {
 }
 
 pub struct VolumeControlInit {
+    pub show_percent: bool,
     pub popovers: PopoverScope,
     pub spec: VolumeControlOptions,
     pub controls: backend::Controls,
@@ -60,8 +62,19 @@ impl Component for VolumeControl {
             set_css_classes: &model.button_css_classes(),
             #[watch]
             set_visible: model.sound.is_some(),
-            #[watch]
-            set_icon_name: model.icon(),
+            #[wrap(Some)]
+            set_child = &gtk::Box {
+                set_spacing: 4,
+                gtk::Image {
+                    #[watch]
+                    set_icon_name: Some(model.icon()),
+                },
+                gtk::Label {
+                    set_visible: model.show_percent,
+                    #[watch]
+                    set_label: &model.sound.as_ref().map_or(String::new(), |sound| format!("{}%", sound.level)),
+                },
+            },
             set_tooltip_text: Some(model.spec.button_tooltip),
             connect_active_notify[sender] => move |button| sender.input(Input::Popup(button.is_active())),
             add_controller = gtk::EventControllerScroll::new(gtk::EventControllerScrollFlags::VERTICAL) {
@@ -124,12 +137,14 @@ impl Component for VolumeControl {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let VolumeControlInit {
+            show_percent,
             spec,
             controls,
             popovers,
         } = init;
 
         let mut model = Self {
+            show_percent,
             _popup: None,
             spec,
             sound: None,
@@ -213,6 +228,9 @@ impl VolumeControl {
 
     fn button_css_classes(&self) -> Vec<&'static str> {
         let mut classes = vec!["topbar-feature-button", self.spec.button_class];
+        if self.show_percent {
+            classes.push("topbar-percent-button");
+        }
 
         if self.is_muted() {
             classes.push("muted");
@@ -258,6 +276,7 @@ mod tests {
         let (controls, commands) = controls();
         let component = VolumeControl::builder()
             .launch(VolumeControlInit {
+                show_percent: true,
                 popovers: PopoverScope::default(),
                 controls,
                 spec: VolumeControlOptions {
@@ -275,6 +294,15 @@ mod tests {
             .detach();
 
         let context = gtk::glib::MainContext::default();
+        let label = component
+            .widget()
+            .widget()
+            .child()
+            .unwrap()
+            .last_child()
+            .unwrap()
+            .downcast::<gtk::Label>()
+            .unwrap();
         let send = |input| {
             component.emit(input);
 
@@ -288,9 +316,12 @@ mod tests {
             muted: false,
         })));
         assert!(!component.widget().widget().has_css_class("muted"));
+        assert!(label.is_visible());
+        assert_eq!(label.label(), "5%");
         assert!(commands.try_recv().is_err());
 
         send(Input::SliderChanged(0));
+        assert_eq!(label.label(), "0%");
         assert!(component.widget().widget().has_css_class("muted"));
         assert!(matches!(
             commands.try_recv(),
@@ -325,6 +356,7 @@ mod tests {
         assert!(component.widget().widget().has_css_class("muted"));
 
         send(Input::Scroll(5));
+        assert_eq!(label.label(), "10%");
         assert!(component.widget().widget().has_css_class("muted"));
         assert_eq!(component.model().sound.as_ref().unwrap().level, 10);
         assert!(matches!(
