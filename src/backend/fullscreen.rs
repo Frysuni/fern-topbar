@@ -12,6 +12,11 @@ pub fn connect() -> Result<Connection, String> {
     Ok(Connection { initial, events })
 }
 
+/// Probe before replacing the process, without starting a watcher thread.
+pub fn check() -> Result<(), String> {
+    wayland::check()
+}
+
 mod wayland {
     use std::collections::{HashMap, HashSet};
     use std::thread;
@@ -36,6 +41,10 @@ mod wayland {
         runtime.start();
 
         Ok((initial, receiver))
+    }
+
+    pub fn check() -> Result<(), String> {
+        WatcherRuntime::connect().map(|_| ())
     }
 
     struct WatcherRuntime {

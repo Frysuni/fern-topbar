@@ -5,6 +5,9 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
+mod watcher;
+pub use watcher::Watcher;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
 #[serde(untagged)]
 pub enum FeatureMode {
@@ -187,21 +190,32 @@ impl Config {
     }
 }
 
-pub fn load() -> Result<Settings, String> {
-    let path = path();
-
-    let contents = match fs::read_to_string(&path) {
-        Ok(contents) => contents,
-        Err(error)
-            if error.kind() == std::io::ErrorKind::NotFound
-                && env::var_os("TOPBAR_CONFIG").is_none() =>
-        {
-            return Config::default().into_settings();
-        }
+pub fn load(override_path: Option<PathBuf>) -> Result<(Settings, Watcher), String> {
+    let explicit = override_path.is_some() || env::var_os("TOPBAR_CONFIG").is_some();
+    let path = override_path.unwrap_or_else(path);
+    // An exec reload keeps its PID. Pass the validated bytes to the replacement
+    // process so a concurrent editor write cannot break startup after validation.
+    // Children and later manual launches have another PID and ignore this handoff.
+    let handoff = (env::var("_TOPBAR_RELOAD_PID").ok().as_deref()
+        == Some(std::process::id().to_string().as_str()))
+    .then(|| env::var("_TOPBAR_RELOAD_CONFIG").ok())
+    .flatten();
+    let reloaded = handoff.is_some();
+    let contents = match handoff.map(Ok).unwrap_or_else(|| fs::read_to_string(&path)) {
+        Ok(contents) => Some(contents),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound && !explicit => None,
         Err(error) => return Err(format!("cannot read {}: {error}", path.display())),
     };
 
-    let config = serde_json::from_str::<Config>(&contents)
+    let settings = parse(contents.as_deref(), &path)?;
+    Ok((settings, Watcher::new(path, contents, reloaded)))
+}
+
+fn parse(contents: Option<&str>, path: &std::path::Path) -> Result<Settings, String> {
+    let Some(contents) = contents else {
+        return Config::default().into_settings();
+    };
+    let config = serde_json::from_str::<Config>(contents)
         .map_err(|error| format!("invalid {}: {error}", path.display()))?;
 
     config

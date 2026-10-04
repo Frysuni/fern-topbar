@@ -9,6 +9,7 @@ use crate::{
     runtime::Task,
 };
 use std::collections::HashMap;
+use std::time::Instant;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 use zbus::names::OwnedUniqueName;
 
@@ -44,6 +45,7 @@ struct PendingAlert {
     // Quiet updates alone never create notifications, including after reconnecting.
     show: bool,
     removed: bool,
+    expires: Option<Instant>,
 }
 
 impl PendingAlert {
@@ -66,6 +68,7 @@ impl PendingAlert {
         self.active = None;
         self.delivered = None;
         self.can_update = false;
+        self.expires = None;
     }
 }
 
@@ -97,6 +100,7 @@ impl AlertDriver {
                 let pending = self.alerts.entry(id).or_default();
                 pending.target = Some(alert);
                 pending.show = true;
+                pending.expires = None;
             }
             Command::Update(id, alert) => {
                 self.alerts.entry(id).or_default().target = Some(alert);
@@ -105,6 +109,7 @@ impl AlertDriver {
                 if let Some(pending) = self.alerts.get_mut(&id) {
                     pending.target = None;
                     pending.show = false;
+                    pending.expires = None;
                     pending.removed = matches!(command, Command::Remove(_));
                 }
             }
@@ -181,6 +186,23 @@ impl AlertDriver {
             .find_map(|(&id, pending)| pending.change().map(|change| (id, change)))
     }
 
+    fn expire(&mut self, now: Instant) {
+        for pending in self.alerts.values_mut() {
+            if pending.expires.is_some_and(|deadline| deadline <= now) {
+                pending.target = None;
+                pending.show = false;
+                pending.expires = None;
+            }
+        }
+    }
+
+    async fn wait_for_expiration(deadline: Option<Instant>) {
+        match deadline {
+            Some(deadline) => tokio::time::sleep_until(deadline.into()).await,
+            None => std::future::pending().await,
+        }
+    }
+
     async fn deliver(&mut self, client: &mut NotificationClient) -> Result<(), Error> {
         let Some((key, change)) = self.next() else {
             return Ok(());
@@ -202,6 +224,7 @@ impl AlertDriver {
                 let delivered = alert.clone();
                 let pending = self.alerts.get_mut(&key).unwrap();
                 pending.active = Some(id);
+                pending.expires = delivered.duration.map(|duration| Instant::now() + duration);
                 pending.delivered = Some(delivered);
                 pending.show = false;
                 pending.can_update = true;
@@ -221,15 +244,22 @@ impl AlertDriver {
 
         loop {
             self.drain_commands();
+            self.expire(Instant::now());
 
             if self.stopping && self.next().is_none() {
                 return;
             }
 
             if self.next().is_none() {
-                match self.commands.recv().await {
-                    Some(command) => self.apply(command),
-                    None => self.stop(),
+                let deadline = self.alerts.values().filter_map(|alert| alert.expires).min();
+                tokio::select! {
+                    command = self.commands.recv() => {
+                        match command {
+                            Some(command) => self.apply(command),
+                            None => self.stop(),
+                        }
+                    }
+                    _ = Self::wait_for_expiration(deadline) => {}
                 }
 
                 continue;
@@ -284,17 +314,20 @@ impl AlertDriver {
     async fn run_session(&mut self, client: &mut NotificationClient) -> Result<(), Error> {
         loop {
             self.drain_commands();
+            self.expire(Instant::now());
 
             if self.stopping && self.next().is_none() {
                 return Ok(());
             }
 
+            let deadline = self.alerts.values().filter_map(|alert| alert.expires).min();
             tokio::select! {
                 biased;
                 closed = client.next_closed() => self.closed(closed?),
                 command = self.commands.recv(), if !self.stopping => {
                     match command { Some(command) => self.apply(command), None => self.stop() }
                 }
+                _ = Self::wait_for_expiration(deadline) => {}
                 // Poll closures before delivery so an already dismissed notification
                 // cannot be resurrected by a queued percentage/content update.
                 _ = std::future::ready(()), if self.next().is_some() => self.deliver(client).await?,
@@ -319,6 +352,7 @@ mod tests {
             summary: "Warning".into(),
             body: body.into(),
             urgency: Urgency::Critical,
+            duration: None,
         }
     }
 
@@ -330,6 +364,45 @@ mod tests {
             can_update: true,
             ..PendingAlert::default()
         }
+    }
+
+    #[test]
+    fn expiration_closes_timed_alerts_and_new_attention_resets_the_deadline() {
+        let (_, receiver) = mpsc::unbounded_channel();
+        let mut driver = AlertDriver::new(receiver);
+        let start = Instant::now();
+        let mut pending = delivered("bad config");
+        pending.expires = Some(start + Duration::from_secs(10));
+        driver.alerts.insert(1, pending);
+        driver.alerts.insert(2, delivered("battery warning"));
+        driver.expire(start + Duration::from_millis(9_999));
+        assert!(driver.next().is_none());
+        driver.expire(start + Duration::from_secs(10));
+        assert!(matches!(driver.next(), Some((1, Delivery::Close(7)))));
+        assert!(driver.alerts[&2].target.is_some());
+
+        driver.apply(Command::Show(1, alert("another error")));
+        driver.expire(start + Duration::from_secs(20));
+        assert!(matches!(driver.next(), Some((1, Delivery::Notify(7, _)))));
+    }
+
+    #[tokio::test]
+    async fn timed_critical_alert_is_closed_after_delivery() {
+        let _bus = dbus::tests::Bus::new().await;
+        let (_backend, mut events) = server().await;
+        let service = AlertService::start();
+        let handle = service.publisher().register();
+        let mut warning = crate::alerts::config::invalid("bad scale");
+        warning.duration = Some(Duration::from_millis(100));
+        handle.show(warning);
+
+        let Event::Added(item, _) = event(&mut events).await else {
+            panic!("expected configuration notification");
+        };
+        assert_eq!(item.urgency, Urgency::Critical);
+        assert!(item.body.contains("bad scale"));
+        let closed = event(&mut events).await;
+        assert!(matches!(closed, Event::Closed(id) if id == item.id));
     }
 
     #[test]

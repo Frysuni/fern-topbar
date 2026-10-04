@@ -65,6 +65,7 @@ impl Warning {
             } else {
                 Urgency::Critical
             },
+            duration: None,
         }
     }
 }

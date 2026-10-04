@@ -24,6 +24,11 @@ where
     shared().spawn(future)
 }
 
+/// Used before GTK starts to finish delivery of a startup error notification.
+pub fn block_on<T>(future: impl Future<Output = T>) -> T {
+    shared().block_on(future)
+}
+
 /// Owns a background task and aborts it when its feature or subscription is dropped.
 ///
 /// `_task` and `_forwarder` fields are lifetime guards even when never read.

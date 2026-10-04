@@ -1,6 +1,7 @@
 //! Internal topbar warnings, independent of widgets and notification transports.
 
 pub mod battery;
+pub mod config;
 pub mod service;
 
 use crate::backend::notifications::Urgency;
@@ -14,6 +15,9 @@ pub struct Alert {
     pub summary: String,
     pub body: String,
     pub urgency: Urgency,
+    /// Close explicitly after delivery, including on servers where critical
+    /// urgency ignores the protocol's expiration timeout.
+    pub duration: Option<std::time::Duration>,
 }
 
 #[derive(Clone)]
@@ -45,6 +49,7 @@ impl AlertPublisher {
 ///
 /// Delivery is asynchronous; the service retains the latest content while offline.
 /// Handles are deliberately not clonable: the producer controls their lifetime.
+#[derive(Debug)]
 pub struct AlertHandle {
     id: u64,
     commands: UnboundedSender<Command>,

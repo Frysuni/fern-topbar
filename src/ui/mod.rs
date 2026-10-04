@@ -46,6 +46,7 @@ pub enum Action {
 /// Commands for panel visibility and child lifecycle handling.
 #[derive(Debug)]
 pub enum Input {
+    Reload(Box<Reload>),
     Show(Option<String>),
     KeepOpen,
     Hide,
@@ -55,6 +56,42 @@ pub enum Input {
     OverviewChanged(bool),
     MonitorsChanged,
     Action(Action),
+}
+
+/// A validated snapshot and restart command; monitor checks require GTK's thread.
+#[derive(Debug)]
+pub struct Reload {
+    pub settings: crate::config::Settings,
+    pub command: std::process::Command,
+    pub warning: std::sync::Arc<crate::alerts::AlertHandle>,
+}
+
+impl Reload {
+    fn apply(mut self) {
+        use std::os::unix::process::CommandExt;
+
+        let error = match validate_monitor(self.settings.monitor.as_deref()) {
+            Err(error) => error,
+            Ok(()) => {
+                tracing::info!("reloading configuration");
+                format!("cannot restart topbar: {}", self.command.exec())
+            }
+        };
+        tracing::error!(%error, "configuration reload rejected");
+        self.warning.show(crate::alerts::config::invalid(&error));
+    }
+}
+
+pub fn validate_monitor(output: Option<&str>) -> Result<(), String> {
+    if let Some(output) = output
+        && monitor_for_output(output).is_none()
+    {
+        return Err(format!(
+            "configured monitor '{output}' was not found; available: {}",
+            available_monitor_names().join(", ")
+        ));
+    }
+    Ok(())
 }
 
 /// Panel monitor policy, enabled features, shared services and action channel.
@@ -271,6 +308,7 @@ impl Component for Panel {
         root: &Self::Root,
     ) {
         match message {
+            Input::Reload(reload) => reload.apply(),
             Input::Show(output) => self.show(output, &widgets.canvas, root),
             Input::KeepOpen if self.revealed => {
                 self.animation

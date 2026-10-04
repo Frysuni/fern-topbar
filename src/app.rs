@@ -10,11 +10,12 @@ use relm4::RelmApp;
 use std::collections::HashSet;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
-pub fn run() -> Result<(), String> {
-    let settings = config::load()?;
-    let panel = start_application_runtime(settings)?;
+pub fn run(settings: config::Settings, watcher: config::Watcher) -> Result<(), String> {
+    let app = RelmApp::new("com.example.Topbar");
+    ui::validate_monitor(settings.monitor.as_deref())?;
+    let panel = start_application_runtime(settings, watcher)?;
 
-    launch_graphical_interface(panel);
+    launch_graphical_interface(app, panel);
 
     Ok(())
 }
@@ -182,6 +183,7 @@ struct ApplicationController {
     _battery: backend::battery::Backend,
     _battery_alerts: runtime::Task,
     _alerts: AlertService,
+    _config: runtime::Task,
 }
 
 impl ApplicationController {
@@ -196,7 +198,10 @@ impl ApplicationController {
     }
 }
 
-fn start_application_runtime(settings: config::Settings) -> Result<ui::PanelInit, String> {
+fn start_application_runtime(
+    settings: config::Settings,
+    mut watcher: config::Watcher,
+) -> Result<ui::PanelInit, String> {
     let (ui_actions, actions) = mpsc::unbounded_channel();
 
     let availability = features::availability::FeatureAvailability::default();
@@ -207,6 +212,38 @@ fn start_application_runtime(settings: config::Settings) -> Result<ui::PanelInit
     let window_manager = WindowManagerState::default();
     let battery = backend::battery::Backend::start(availability.publisher(FeatureId::Battery));
     let alerts = AlertService::start();
+    let warning = std::sync::Arc::new(alerts.publisher().register());
+    if watcher.was_reloaded() {
+        warning.show(crate::alerts::config::reloaded());
+    }
+    let config_task = runtime::Task::spawn(async move {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+            match watcher.poll() {
+                Some(Ok(settings)) => match (|| {
+                    if settings.reveal.on_hover.enabled && !settings.reveal.on_hover.on_fullscreen {
+                        backend::check_fullscreen_monitoring()?;
+                    }
+                    watcher.restart_command()
+                })() {
+                    Ok(command) => ui::BROKER.send(ui::Input::Reload(Box::new(ui::Reload {
+                        settings,
+                        command,
+                        warning: warning.clone(),
+                    }))),
+                    Err(error) => {
+                        tracing::error!(%error, "configuration reload failed");
+                        warning.show(crate::alerts::config::invalid(&error));
+                    }
+                },
+                Some(Err(error)) => {
+                    tracing::error!(%error, "configuration reload rejected");
+                    warning.show(crate::alerts::config::invalid(&error));
+                }
+                None => {}
+            }
+        }
+    });
     let battery_alerts = runtime::Task::spawn(
         BatteryAlerts::new(battery.state.subscribe(), alerts.publisher().register()).run(),
     );
@@ -235,6 +272,7 @@ fn start_application_runtime(settings: config::Settings) -> Result<ui::PanelInit
             _battery: battery,
             _battery_alerts: battery_alerts,
             _alerts: alerts,
+            _config: config_task,
         }
         .run(),
     );
@@ -249,15 +287,14 @@ fn start_application_runtime(settings: config::Settings) -> Result<ui::PanelInit
     })
 }
 
-fn launch_graphical_interface(init: ui::PanelInit) {
-    let app = RelmApp::new("com.example.Topbar");
-
+fn launch_graphical_interface(app: RelmApp<ui::Input>, init: ui::PanelInit) {
     relm4_icons::initialize_icons(
         ui::icon_names::GRESOURCE_BYTES,
         ui::icon_names::RESOURCE_PREFIX,
     );
 
     app.with_broker(&ui::BROKER)
+        .with_args(vec!["topbar".into()])
         .visible_on_activate(false)
         .run::<ui::Panel>(init);
 }

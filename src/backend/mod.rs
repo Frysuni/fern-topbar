@@ -11,6 +11,7 @@ use snafu::Snafu;
 use std::collections::HashSet;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
+pub use fullscreen::check as check_fullscreen_monitoring;
 pub use wm::{Command, Workspace};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
